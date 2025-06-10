@@ -72,6 +72,61 @@
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
+
+  /* Tema Verde */
+  .dark.theme-green {
+    --primary: 142 76% 36%;
+    --primary-foreground: 0 0% 98%;
+    --ring: 142 76% 36%;
+    --chart-1: 142 76% 36%;
+    --chart-2: 160 60% 45%;
+  }
+
+  /* Tema Púrpura */
+  .dark.theme-purple {
+    --primary: 262 83% 58%;
+    --primary-foreground: 0 0% 98%;
+    --ring: 262 83% 58%;
+    --chart-1: 262 83% 58%;
+    --chart-2: 280 65% 60%;
+  }
+
+  /* Tema Naranja */
+  .dark.theme-orange {
+    --primary: 25 95% 53%;
+    --primary-foreground: 0 0% 98%;
+    --ring: 25 95% 53%;
+    --chart-1: 25 95% 53%;
+    --chart-2: 43 74% 66%;
+  }
+
+  /* Tema Rojo */
+  .dark.theme-red {
+    --primary: 0 84% 60%;
+    --primary-foreground: 0 0% 98%;
+    --ring: 0 84% 60%;
+    --chart-1: 0 84% 60%;
+    --chart-2: 12 76% 61%;
+  }
+
+  /* Tema Azul */
+  .dark.theme-blue {
+    --primary: 200 98% 39%;
+    --primary-foreground: 0 0% 98%;
+    --ring: 200 98% 39%;
+    --chart-1: 200 98% 39%;
+    --chart-2: 217 91% 60%;
+  }
+
+  /* Tema Default (mantener para compatibilidad) */
+  .dark.theme-default {
+    --primary: 221 83% 53%;
+    --primary-foreground: 0 0% 98%;
+    --ring: 221 83% 53%;
+    --chart-1: 221 83% 53%;
+    --chart-2: 217 91% 60%;
+  }
+  
 }
 
 @layer base {

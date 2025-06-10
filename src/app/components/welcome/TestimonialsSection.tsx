@@ -1,6 +1,6 @@
 import type React from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/app/components/ui/card';
-import { Avatar, AvatarImage, AvatarFallback } from "@/app/components/ui/avatar";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Star } from 'lucide-react';
 
 interface TestimonialCardProps {

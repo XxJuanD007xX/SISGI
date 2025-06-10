@@ -1,5 +1,5 @@
 import { type Metadata } from 'next'
-import { Toaster } from "@/app/components/ui/toaster";
+import { Toaster } from "@/components/ui/toaster";
 import {
   ClerkProvider,
   SignInButton,
@@ -48,16 +48,16 @@ export default function RootLayout({
         </head>
 
         <body className={`${geistSans.variable} ${geistMono.variable} antialiased` + " font-body antialiased" }>
-
-          <header className="flex justify-end items-center p-4 gap-4 h-16">
+          
             <SignedOut>
+              {/* 
               <SignInButton />
               <SignUpButton />
+              */}
             </SignedOut>
             <SignedIn>
-              <UserButton />
+              {/* <UserButton />  <-- Elimina o comenta esta línea */}
             </SignedIn>
-          </header>
 
           {children}
           <Toaster />

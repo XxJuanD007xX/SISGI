@@ -1,5 +1,5 @@
 import type React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart3, PackageSearch, Users, Zap, ShieldCheck, LayoutGrid } from 'lucide-react';
 
 interface FeatureCardProps {
