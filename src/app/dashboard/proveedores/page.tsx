@@ -137,15 +137,15 @@ export default function ProveedoresPage() {
                 <div className="space-y-4">
                   {proveedores.map((proveedor) => (
                     <div key={proveedor.id} className="p-4 border rounded-lg">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start space-x-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex items-start space-x-4 flex-1">
                           <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center">
                             <Building className="h-6 w-6" />
                           </div>
                           <div className="space-y-1">
                             <p className="font-medium text-lg">{proveedor.nombre}</p>
                             <p className="text-sm text-muted-foreground">Contacto: {proveedor.contacto}</p>
-                            <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 text-sm text-muted-foreground">
                               <div className="flex items-center space-x-1">
                                 <Phone className="h-3 w-3" />
                                 <span>{proveedor.telefono}</span>
@@ -157,8 +157,8 @@ export default function ProveedoresPage() {
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-4">
-                          <div className="text-right hidden sm:block">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                          <div className="text-right">
                             <p className="text-sm font-medium">{proveedor.productos} productos</p>
                             <Badge variant={proveedor.estado === "Activo" ? "default" : "secondary"}>
                               {proveedor.estado}
@@ -172,6 +172,7 @@ export default function ProveedoresPage() {
                     </div>
                   ))}
                 </div>
+                
               </CardContent>
             </Card>
           </div>

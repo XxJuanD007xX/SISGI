@@ -20,6 +20,22 @@ import { Palette, Check, Settings, Moon, Bell, Shield, Database } from "lucide-r
 export default function ConfiguracionPage() {
   const { theme, setTheme } = useTheme()
 
+  const handleThemeChange = (name: string) => {
+    setTheme(name as any)
+    if (typeof window !== "undefined") {
+      const root = document.documentElement // <--- Cambia aquí
+      root.classList.remove(
+        "theme-default",
+        "theme-green",
+        "theme-purple",
+        "theme-orange",
+        "theme-red",
+        "theme-blue"
+      )
+      root.classList.add(`theme-${name}`)
+    }
+  }
+
   const colorThemes = [
     {
       name: "default",
@@ -145,7 +161,7 @@ export default function ConfiguracionPage() {
                       className={`relative cursor-pointer rounded-lg border-2 p-4 transition-all hover:shadow-md ${
                         theme === colorTheme.name ? "border-primary ring-2 ring-primary/20" : "border-border"
                       }`}
-                      onClick={() => setTheme(colorTheme.name as any)}
+                      onClick={() => handleThemeChange(colorTheme.name)}
                     >
                       {theme === colorTheme.name && (
                         <div className="absolute top-2 right-2">

@@ -47,7 +47,7 @@ export default function RootLayout({
 
         </head>
 
-        <body className={`${geistSans.variable} ${geistMono.variable} antialiased` + " font-body antialiased" }>
+        <body className={`${geistSans.variable} ${geistMono.variable} antialiased font-body`}>
           
             <SignedOut>
               {/* 
@@ -56,7 +56,7 @@ export default function RootLayout({
               */}
             </SignedOut>
             <SignedIn>
-              {/* <UserButton />  <-- Elimina o comenta esta línea */}
+              {/* <UserButton /> */}
             </SignedIn>
 
           {children}

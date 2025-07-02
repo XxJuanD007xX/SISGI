@@ -141,8 +141,11 @@ export default function UsuariosPage() {
                 {/* Users Table */}
                 <div className="space-y-4">
                   {usuarios.map((usuario) => (
-                    <div key={usuario.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center space-x-4">
+                    <div
+                      key={usuario.id}
+                      className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg gap-4"
+                    >
+                      <div className="flex items-center space-x-4 flex-1">
                         <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
                           <Users className="h-5 w-5" />
                         </div>
@@ -151,10 +154,10 @@ export default function UsuariosPage() {
                           <p className="text-sm text-muted-foreground">{usuario.email}</p>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-4">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
                         <Badge variant={usuario.rol === "Administrador" ? "default" : "secondary"}>{usuario.rol}</Badge>
                         <Badge variant={usuario.estado === "Activo" ? "default" : "secondary"}>{usuario.estado}</Badge>
-                        <div className="text-sm text-muted-foreground hidden sm:block">{usuario.ultimoAcceso}</div>
+                        <div className="text-sm text-muted-foreground">{usuario.ultimoAcceso}</div>
                         <Button variant="outline" size="sm">
                           Editar
                         </Button>

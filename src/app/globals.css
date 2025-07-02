@@ -37,6 +37,9 @@
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+    --color-primary: hsl(221, 83%, 53%);
+    --color-secondary: hsl(210, 40%, 95%);
+    --color-accent: hsl(210, 40%, 95%);
   }
   .dark {
     --background: 0 0% 11.8%; /* Gris muy oscuro #1E1E1E */
@@ -77,6 +80,10 @@
   .dark.theme-green {
     --primary: 142 76% 36%;
     --primary-foreground: 0 0% 98%;
+    --secondary: 138 76% 97%;
+    --secondary-foreground: 0 0% 11.8%;
+    --accent: 138 76% 97%;
+    --accent-foreground: 0 0% 11.8%;
     --ring: 142 76% 36%;
     --chart-1: 142 76% 36%;
     --chart-2: 160 60% 45%;
@@ -86,6 +93,10 @@
   .dark.theme-purple {
     --primary: 262 83% 58%;
     --primary-foreground: 0 0% 98%;
+    --secondary: 270 95% 98%;
+    --secondary-foreground: 0 0% 11.8%;
+    --accent: 270 95% 98%;
+    --accent-foreground: 0 0% 11.8%;
     --ring: 262 83% 58%;
     --chart-1: 262 83% 58%;
     --chart-2: 280 65% 60%;

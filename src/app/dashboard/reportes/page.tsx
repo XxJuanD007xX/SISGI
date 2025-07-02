@@ -114,8 +114,11 @@ export default function ReportesPage() {
               <CardContent>
                 <div className="space-y-4">
                   {reportes.map((reporte) => (
-                    <div key={reporte.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center space-x-4">
+                    <div
+                      key={reporte.id}
+                      className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg gap-4"
+                    >
+                      <div className="flex items-center space-x-4 flex-1">
                         <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
                           <FileText className="h-5 w-5" />
                         </div>
@@ -129,7 +132,7 @@ export default function ReportesPage() {
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-4">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
                         <Badge
                           variant={
                             reporte.tipo === "Inventario"

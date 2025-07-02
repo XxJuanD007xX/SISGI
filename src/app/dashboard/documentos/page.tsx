@@ -353,18 +353,18 @@ export default function DocumentosPage() {
                     <div className="space-y-4">
                       {documentosFiltrados.map((documento) => (
                         <div key={documento.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                          <div className="flex items-start justify-between">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div className="flex items-start space-x-4 flex-1">
                               <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center">
                                 <documento.icono className="h-6 w-6" />
                               </div>
                               <div className="flex-1 space-y-2">
-                                <div className="flex items-center gap-2">
+                                <div className="flex flex-wrap items-center gap-2">
                                   <h3 className="font-medium text-lg">{documento.nombre}</h3>
                                   {getEstadoBadge(documento.estado)}
                                 </div>
                                 <p className="text-sm text-muted-foreground">{documento.descripcion}</p>
-                                <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
                                   <div className="flex items-center gap-1">
                                     {getTipoIcon(documento.tipo)}
                                     <span>{documento.tipo}</span>
@@ -387,21 +387,20 @@ export default function DocumentosPage() {
                                 </div>
                               </div>
                             </div>
-                            <div className="flex items-center space-x-2">
-                              <Button variant="outline" size="sm">
+                            <div className="flex flex-row sm:flex-col gap-2 sm:gap-2 justify-end">
+                              <Button variant="outline" size="sm" className="w-full sm:w-auto">
                                 <Eye className="h-4 w-4 mr-0" />
-                                Ver
+                                <span className="hidden sm:inline ml-1">Ver</span>
                               </Button>
-                              <Button variant="outline" size="sm">
+                              <Button variant="outline" size="sm" className="w-full sm:w-auto">
                                 <Download className="h-4 w-4 mr-0" />
-                                Descargar
+                                <span className="hidden sm:inline ml-1">Descargar</span>
                               </Button>
                             </div>
                           </div>
                         </div>
                       ))}
                     </div>
-
                     {documentosFiltrados.length === 0 && (
                       <div className="text-center py-8">
                         <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />

@@ -79,20 +79,7 @@ const data = {
       ],
     },
   ],
-  navSecondary: [
-    {
-      title: "Notificaciones",
-      url: "/dashboard/notificaciones",
-      icon: Bell,
-      badge: "3",
-      paths: ["/dashboard/notificaciones"],
-    },
-    {
-      title: "Calendario",
-      url: "/dashboard/calendario",
-      icon: Calendar,
-      paths: ["/dashboard/calendario"],
-    },
+  navSecondary: [ 
     {
       title: "Documentos",
       url: "/dashboard/documentos",
@@ -109,6 +96,7 @@ const data = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+
   const pathname = usePathname()
   const { user } = useUser()
 
@@ -117,27 +105,41 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   }
 
   return (
+
     <Sidebar variant="inset" {...props}>
+
       <SidebarHeader>
+
         <div className="flex items-center gap-2 px-4 py-2">
+
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Database className="h-4 w-4" />
           </div>
+
           <div className="grid flex-1 text-left text-sm leading-tight">
             <span className="truncate font-semibold">SISGI</span>
             <span className="truncate text-xs text-muted-foreground">Variedades Dipal</span>
           </div>
+
         </div><hr />
+
       </SidebarHeader>
 
       <SidebarContent>
+
         {/* Navegación Principal */}
         <SidebarGroup>
+
           <SidebarGroupLabel>Módulos Principales</SidebarGroupLabel>
+
           <SidebarGroupContent>
+
             <SidebarMenu>
+
               {data.navMain.map((item) => (
+
                 <SidebarMenuItem key={item.title}>
+
                   <SidebarMenuButton asChild isActive={isActive(item.paths)}>
                     <a href={item.url} className="flex items-center gap-3 px-3 py-2">
                       <item.icon className="h-5 w-5 flex-shrink-0" />
@@ -149,17 +151,26 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                       )}
                     </a>
                   </SidebarMenuButton>
+
                 </SidebarMenuItem>
+
               ))}
+
             </SidebarMenu>
+
           </SidebarGroupContent>
+
         </SidebarGroup>
 
         {/* Navegación Secundaria */}
         <SidebarGroup>
+
           <hr /><SidebarGroupLabel>Herramientas</SidebarGroupLabel>
+
           <SidebarGroupContent>
+
             <SidebarMenu>
+              
               {data.navSecondary.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={isActive(item.paths)}>
@@ -175,41 +186,21 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+
             </SidebarMenu>
+
           </SidebarGroupContent>
+
         </SidebarGroup>
 
-        {/* Estado del Sistema */}
-        <SidebarGroup>
-          <hr /><SidebarGroupLabel>Estado del Sistema</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <div className="px-3 py-2 space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Servidor</span>
-                <div className="flex items-center gap-1">
-                  <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                  <span className="text-green-500">Online</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Base de Datos</span>
-                <div className="flex items-center gap-1">
-                  <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                  <span className="text-green-500">Conectada</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Último Backup</span>
-                <span className="text-xs text-muted-foreground">Hace 2h</span>
-              </div>
-            </div><hr />
-          </SidebarGroupContent>
-        </SidebarGroup>
       </SidebarContent>
 
       <SidebarFooter>
+
         <div className="px-3 py-2 flex items-center gap-2">
+
           <UserButton afterSignOutUrl="/" />
+
           <div className="flex-1">
             <p className="font-medium">
               {user?.fullName || user?.username || "Usuario"}
@@ -219,8 +210,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </p>
           </div>
         </div>
+
       </SidebarFooter>
+
       <SidebarRail />
+
     </Sidebar>
+
   )
+  
 }
