@@ -32,16 +32,18 @@ export function ThemeProvider({ children, defaultTheme = "default", ...props }: 
   }, [])
 
   React.useEffect(() => {
-    const root = window.document.documentElement
-
-    // Remover todas las clases de tema anteriores
-    root.classList.remove("theme-default", "theme-blue", "theme-green", "theme-purple", "theme-orange", "theme-red")
-
-    // Añadir la nueva clase de tema
-    root.classList.add(`theme-${theme}`)
-
-    // Guardar en localStorage
-    localStorage.setItem("sisgi-theme", theme)
+    if (typeof window !== "undefined") {
+      const root = document.documentElement
+      root.classList.remove(
+        "theme-default",
+        "theme-green",
+        "theme-purple",
+        "theme-orange",
+        "theme-red",
+        "theme-blue"
+      )
+      root.classList.add(`theme-${theme}`)
+    }
   }, [theme])
 
   const value = {

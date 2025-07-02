@@ -85,12 +85,14 @@ const data = {
       url: "/dashboard/documentos",
       icon: FileText,
       paths: ["/dashboard/documentos"],
+      badge: undefined,
     },
     {
       title: "Configuración",
       url: "/dashboard/configuracion",
       icon: Settings,
       paths: ["/dashboard/configuracion"],
+      badge: undefined,
     },
   ],
 }
@@ -171,21 +173,28 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
             <SidebarMenu>
               
-              {data.navSecondary.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={isActive(item.paths)}>
-                    <a href={item.url} className="flex items-center gap-3 px-3 py-2">
-                      <item.icon className="h-5 w-5 flex-shrink-0" />
-                      <span className="flex-1">{item.title}</span>
-                      {item.badge && (
-                        <Badge variant="destructive" className="h-5 px-2 text-xs font-medium">
-                          {item.badge}
-                        </Badge>
-                      )}
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {data.navSecondary.map((item) => {
+                console.log("Sidebar item:", item);
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild isActive={isActive(item.paths)}>
+                      <a href={item.url} className="flex items-center gap-3 px-3 py-2">
+                        {item.icon ? (
+                          <item.icon className="h-5 w-5 flex-shrink-0" />
+                        ) : (
+                          <span className="h-5 w-5 flex-shrink-0" />
+                        )}
+                        <span className="flex-1">{item.title}</span>
+                        {item.badge && (
+                          <Badge variant="destructive" className="h-5 px-2 text-xs font-medium">
+                            {item.badge}
+                          </Badge>
+                        )}
+                      </a>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
 
             </SidebarMenu>
 

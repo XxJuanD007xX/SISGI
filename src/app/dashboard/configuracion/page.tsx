@@ -161,7 +161,7 @@ export default function ConfiguracionPage() {
                       className={`relative cursor-pointer rounded-lg border-2 p-4 transition-all hover:shadow-md ${
                         theme === colorTheme.name ? "border-primary ring-2 ring-primary/20" : "border-border"
                       }`}
-                      onClick={() => handleThemeChange(colorTheme.name)}
+                      onClick={() => setTheme(colorTheme.name as any)}
                     >
                       {theme === colorTheme.name && (
                         <div className="absolute top-2 right-2">
