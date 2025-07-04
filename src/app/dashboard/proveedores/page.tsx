@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { Truck, Plus, Search, Building, Phone, Mail } from "lucide-react"
+import { SupplierFormModal } from "../../components/supplier-form-modal"
 
 export default function ProveedoresPage() {
   const proveedores = [
@@ -76,10 +77,7 @@ export default function ProveedoresPage() {
                 <h1 className="text-3xl font-bold tracking-tight">Gestión de Proveedores</h1>
                 <p className="text-muted-foreground">Administra proveedores y relaciones comerciales</p>
               </div>
-              <Button className="w-fit">
-                <Plus className="h-4 w-4 mr-2" />
-                Nuevo Proveedor
-              </Button>
+              <SupplierFormModal />
             </div>
 
             {/* Stats Cards */}

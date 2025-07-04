@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { Package, Plus, Search, AlertTriangle, TrendingUp, DollarSign } from "lucide-react"
+import { ProductFormModal } from "../../components/product-form-modal"
 
 export default function ProductosPage() {
   const productos = [
@@ -67,10 +68,7 @@ export default function ProductosPage() {
                 <h1 className="text-3xl font-bold tracking-tight">Gestión de Productos</h1>
                 <p className="text-muted-foreground">Control de inventario, categorías y stock de productos</p>
               </div>
-              <Button className="w-fit">
-                <Plus className="h-4 w-4 mr-2" />
-                Nuevo Producto
-              </Button>
+              <ProductFormModal />
             </div>
 
             {/* Stats Cards */}
