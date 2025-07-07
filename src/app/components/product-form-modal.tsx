@@ -19,35 +19,35 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Plus, Package, DollarSign, Hash, Tag, FileText } from "lucide-react"
+import { toast } from "sonner"
+import { Product } from "./types"
 
-interface ProductFormData {
-  nombre: string
-  descripcion: string
-  categoria: string
-  precio: string
-  stock: string
-  stockMinimo: string
-  codigoBarras: string
-  marca: string
-  proveedor: string
-  ubicacion: string
+interface ProductFormModalProps {
+  producto?: Product // opcional, para edición
+  modoEdicion?: boolean
+  onSuccess?: () => void
 }
 
-export function ProductFormModal() {
+export function ProductFormModal({ producto, modoEdicion, onSuccess }: ProductFormModalProps) {
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [formData, setFormData] = useState<ProductFormData>({
-    nombre: "",
-    descripcion: "",
-    categoria: "",
-    precio: "",
-    stock: "",
-    stockMinimo: "",
-    codigoBarras: "",
-    marca: "",
-    proveedor: "",
-    ubicacion: "",
-  })
+
+  const [formData, setFormData] = useState(
+    producto
+      ? { ...producto }
+      : {
+          nombre: "",
+          descripcion: "",
+          categoria: "",
+          precio: "",
+          stock: "",
+          stockMinimo: "",
+          codigoBarras: "",
+          marca: "",
+          proveedor: "",
+          ubicacion: "",
+        }
+  )
 
   const categorias = [
     "Electrónicos",
@@ -71,6 +71,19 @@ export function ProductFormModal() {
     "Librería Central",
   ]
 
+  interface ProductFormData {
+    nombre: string
+    descripcion: string
+    categoria: string
+    precio: string
+    stock: string
+    stockMinimo: string
+    codigoBarras: string
+    marca: string
+    proveedor: string
+    ubicacion: string
+  }
+
   const handleInputChange = (field: keyof ProductFormData, value: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -78,32 +91,69 @@ export function ProductFormModal() {
     }))
   }
 
+  // =============================================================================================================
+  // ------------------------------------------- FETCH AL BACKEND -------------------------------------------
+  // =============================================================================================================
+
+  // Esta función se encarga de enviar los datos del formulario al backend
+
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
 
-    // Simular llamada a API
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+    e.preventDefault();
+    setIsLoading(true);
 
-    console.log("Datos del producto:", formData)
+    try {
+        // La URL de tu API de Java que creamos
+        const response = await fetch(
+          modoEdicion
+            ? `http://localhost:8080/api/products/${producto?.id}`
+            : 'http://localhost:8080/api/products',
+          {
+            method: modoEdicion ? 'PUT' : 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData),
+          }
+        )
 
-    // Resetear formulario
-    setFormData({
-      nombre: "",
-      descripcion: "",
-      categoria: "",
-      precio: "",
-      stock: "",
-      stockMinimo: "",
-      codigoBarras: "",
-      marca: "",
-      proveedor: "",
-      ubicacion: "",
-    })
 
-    setIsLoading(false)
-    setOpen(false)
-  }
+        if (!response.ok) {
+            // Si el backend devuelve un error, lo lanzamos para que lo capture el 'catch'
+            throw new Error('Error al guardar el producto');
+        }
+
+        // Si todo sale bien, leemos la respuesta del backend
+        const nuevoProductoGuardado = await response.json();
+        console.log('¡Producto guardado en la BD!:', nuevoProductoGuardado);
+        toast.success("Producto guardado con éxito")
+
+        setOpen(false); // Cierra el modal
+
+        if (onSuccess) onSuccess() // ✅ LLAMA LA FUNCIÓN QUE RECARGA LA LISTA
+
+    } catch (error) {
+        console.error("Hubo un error en la petición fetch:", error);
+        toast.error("Error al guardar el producto")
+
+    } finally {
+        setIsLoading(false); // Detiene el indicador de carga, tanto en éxito como en error
+
+        // Opcional: Resetear el formulario después de enviar
+        setFormData({
+            nombre: "",
+            descripcion: "",
+            categoria: "",
+            precio: "",
+            stock: "",
+            stockMinimo: "",
+            codigoBarras: "",
+            marca: "",
+            proveedor: "",
+            ubicacion: "",
+        });
+        
+    }
+    
+  };
 
   const isFormValid = formData.nombre && formData.categoria && formData.precio && formData.stock
 
@@ -120,16 +170,22 @@ export function ProductFormModal() {
         <DialogHeader className="relative mb-2">
           <div className="flex items-center gap-4 p-4 rounded-t-lg bg-gradient-to-r from-primary/10 via-background to-background border-b">
             <div className="flex items-center justify-center rounded-full bg-primary/20 h-12 w-12 shadow-inner">
-              {/* Cambia el icono según el formulario */}
               <Package className="h-7 w-7" />
             </div>
             <div>
               <DialogTitle className="text-2xl font-extrabold tracking-tight">
-                Agregar Nuevo Producto
+                {modoEdicion ? "Editar Producto" : "Agregar Nuevo Producto"}
               </DialogTitle>
               <DialogDescription className="text-muted-foreground mt-1 text-base">
-                Completa la información del producto.<br />
-                <span className="text-destructive font-semibold">*</span>Campos obligatorios.
+                {modoEdicion
+                  ? "Modifica la información del producto y guarda los cambios."
+                  : (
+                    <>
+                      Completa la información del producto.<br />
+                      <span className="text-destructive font-semibold">*</span>Campos obligatorios.
+                    </>
+                  )
+                }
               </DialogDescription>
             </div>
           </div>

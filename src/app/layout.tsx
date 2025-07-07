@@ -1,5 +1,4 @@
 import { type Metadata } from 'next'
-import { Toaster } from "@/components/ui/toaster";
 import {
   ClerkProvider,
   SignInButton,
@@ -10,6 +9,7 @@ import {
 } from '@clerk/nextjs'
 import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.css'
+import { Toaster } from 'sonner'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -21,11 +21,10 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 })
 
-export const metadata: Metadata = {
+export const metadata = {
   title: 'SISGI - Sistema de Gestión de Inventarios',
   description: 'Sistema de software para la Gestión de Inventarios de Variedades Dipal.',
-};
-
+}
 
 export default function RootLayout({
   children,

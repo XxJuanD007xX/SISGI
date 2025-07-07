@@ -1,5 +1,6 @@
 "use client"
 
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AppSidebar } from "@/app/components/app-sidebar"
 import {
   Breadcrumb,
@@ -17,28 +18,61 @@ import { Separator } from "@/components/ui/separator"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { Package, Plus, Search, AlertTriangle, TrendingUp, DollarSign } from "lucide-react"
 import { ProductFormModal } from "../../components/product-form-modal"
+import { ProductDrawer } from "../../components/product-drawer"
+import { Product } from "@/app/components/types"
 
+import { useEffect, useState } from "react"
+
+interface Producto {
+  id: number
+  nombre: string
+  categoria: string
+  stock: number
+  precio: number
+  stockMinimo?: number
+  descripcion?: string
+}
+ 
 export default function ProductosPage() {
-  const productos = [
-    {
-      id: 1,
-      nombre: "Smartphone XYZ-123",
-      categoria: "Electrónicos",
-      stock: 25,
-      precio: "$299.99",
-      estado: "En Stock",
-    },
-    {
-      id: 2,
-      nombre: "Auriculares ABC-456",
-      categoria: "Electrónicos",
-      stock: 3,
-      precio: "$89.99",
-      estado: "Stock Bajo",
-    },
-    { id: 3, nombre: "Camiseta Polo", categoria: "Ropa", stock: 50, precio: "$24.99", estado: "En Stock" },
-    { id: 4, nombre: "Lámpara LED", categoria: "Hogar", stock: 0, precio: "$45.99", estado: "Agotado" },
-  ]
+
+  const [productos, setProductos] = useState<Product[]>([])
+  const [busqueda, setBusqueda] = useState("");
+  const categoriasUnicas = Array.from(new Set(productos.map(p => p.categoria)));
+  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<string | null>(null);
+  const [estadoSeleccionado, setEstadoSeleccionado] = useState<string | null>(null);
+  
+  const productosFiltrados = productos.filter(producto => {
+    // Filtro búsqueda
+    const coincideBusqueda =
+      producto.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
+      producto.categoria.toLowerCase().includes(busqueda.toLowerCase());
+
+    // Filtro categoría
+    const coincideCategoria = categoriaSeleccionada
+      ? producto.categoria === categoriaSeleccionada
+      : true;
+
+    // Filtro estado
+    let estado = "En Stock";
+    if (producto.stock === 0) estado = "Agotado";
+    else if (producto.stock <= (producto.stockMinimo ?? 5)) estado = "Stock Bajo";
+    const coincideEstado = estadoSeleccionado
+      ? estado === estadoSeleccionado
+      : true;
+
+    return coincideBusqueda && coincideCategoria && coincideEstado;
+  });
+
+  const fetchProductos = () => {
+    fetch("http://localhost:8080/api/products")
+      .then((res) => res.json())
+      .then((data) => setProductos(data))
+      .catch((err) => console.error("Error al obtener productos:", err))
+  }
+
+  useEffect(() => {
+    fetchProductos()
+  }, [])
 
   return (
     <div className="dark">
@@ -68,51 +102,73 @@ export default function ProductosPage() {
                 <h1 className="text-3xl font-bold tracking-tight">Gestión de Productos</h1>
                 <p className="text-muted-foreground">Control de inventario, categorías y stock de productos</p>
               </div>
-              <ProductFormModal />
+              {/* Botón para registrar nuevo producto */}
+              <ProductFormModal onSuccess={fetchProductos} />
             </div>
 
             {/* Stats Cards */}
             <div className="grid gap-4 md:grid-cols-4">
+              {/* Total Productos */}
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Productos</CardTitle>
                   <Package className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">245</div>
-                  <p className="text-xs text-muted-foreground">+12 este mes</p>
+                  <div className="text-2xl font-bold">{productos.length}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {productos.length > 0 ? `+${productos.length} en total` : "Sin productos"}
+                  </p>
                 </CardContent>
               </Card>
 
+              {/* Stock Bajo */}
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Stock Bajo</CardTitle>
                   <AlertTriangle className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-orange-600">8</div>
+                  <div className="text-2xl font-bold text-orange-600">
+                    {
+                      productos.filter(
+                        (p) => p.stock <= (p.stockMinimo ?? 5) && p.stock > 0
+                      ).length
+                    }
+                  </div>
                   <p className="text-xs text-muted-foreground">Requieren atención</p>
                 </CardContent>
               </Card>
 
+              {/* Valor Inventario */}
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Valor Inventario</CardTitle>
                   <DollarSign className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">$125,430</div>
-                  <p className="text-xs text-muted-foreground">+8.2% vs mes anterior</p>
+                  <div className="text-2xl font-bold">
+                    $
+                    {productos
+                      .reduce((acc, p) => acc + (p.precio * p.stock), 0)
+                      .toLocaleString()}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Inventario total</p>
                 </CardContent>
               </Card>
 
+              {/* Categorías */}
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Categorías</CardTitle>
                   <TrendingUp className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">12</div>
+                  <div className="text-2xl font-bold">
+                    {
+                      Array.from(new Set(productos.map((p) => p.categoria))).length
+                    }
+                  </div>
                   <p className="text-xs text-muted-foreground">Activas</p>
                 </CardContent>
               </Card>
@@ -125,17 +181,59 @@ export default function ProductosPage() {
                 <CardDescription>Lista completa de productos en el sistema</CardDescription>
               </CardHeader>
               <CardContent>
+
                 <div className="flex items-center space-x-2 mb-4">
                   <div className="relative flex-1">
                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Buscar productos..." className="pl-8" />
+                    <Input
+                      placeholder="Buscar productos..."
+                      className="pl-8"
+                      value={busqueda}
+                      onChange={e => setBusqueda(e.target.value)}
+                    />
                   </div>
-                  <Button variant="outline">Categorías</Button>
-                  <Button variant="outline">Estado</Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline">
+                        {categoriaSeleccionada || "Categorías"}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem onClick={() => setCategoriaSeleccionada(null)}>
+                        Todas
+                      </DropdownMenuItem>
+                      {categoriasUnicas.map(cat => (
+                        <DropdownMenuItem key={cat} onClick={() => setCategoriaSeleccionada(cat)}>
+                          {cat}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline">
+                        {estadoSeleccionado || "Estado"}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem onClick={() => setEstadoSeleccionado(null)}>
+                        Todos
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setEstadoSeleccionado("En Stock")}>
+                        En Stock
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setEstadoSeleccionado("Stock Bajo")}>
+                        Stock Bajo
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setEstadoSeleccionado("Agotado")}>
+                        Agotado
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
 
                 <div className="space-y-4">
-                  {productos.map((producto) => (
+                  {productosFiltrados.map((producto) => (
                     <div
                       key={producto.id}
                       className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg gap-4"
@@ -151,23 +249,25 @@ export default function ProductosPage() {
                       </div>
                       <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
                         <div className="text-right">
-                          <p className="font-medium">{producto.precio}</p>
+
+                          <p className="font-medium">${producto.precio.toLocaleString()}</p>
+
                           <p className="text-sm text-muted-foreground">Stock: {producto.stock}</p>
                         </div>
                         <Badge
                           variant={
-                            producto.estado === "En Stock"
-                              ? "default"
-                              : producto.estado === "Stock Bajo"
-                                ? "secondary"
-                                : "destructive"
+                            producto.stock === 0
+                              ? "destructive"
+                              : producto.stock <= (producto.stockMinimo ?? 5)
+                              ? "secondary"
+                              : "default"
                           }
                         >
-                          {producto.estado}
+                          {producto.stock === 0 ? "Agotado" : producto.stock <= (producto.stockMinimo ?? 5) ? "Stock Bajo" : "En Stock"}
                         </Badge>
-                        <Button variant="outline" size="sm">
-                          Ver Detalles
-                        </Button>
+                        
+                        <ProductDrawer producto={producto} onSuccess={fetchProductos} />
+
                       </div>
                     </div>
                   ))}
