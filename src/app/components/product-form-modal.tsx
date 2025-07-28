@@ -1,8 +1,6 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -20,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Plus, Package, DollarSign, Hash, Tag, FileText } from "lucide-react"
 import { toast } from "sonner"
-import { Product } from "./types"
+import { Product, Proveedor } from "./types" 
 
 interface ProductFormModalProps {
   producto?: Product // opcional, para edición
@@ -31,6 +29,9 @@ interface ProductFormModalProps {
 export function ProductFormModal({ producto, modoEdicion, onSuccess }: ProductFormModalProps) {
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+
+  // --- ESTADO PARA ALMACENAR LOS PROVEEDORES ---
+  const [listaProveedores, setListaProveedores] = useState<Proveedor[]>([])
 
   const [formData, setFormData] = useState(
     producto
@@ -48,6 +49,25 @@ export function ProductFormModal({ producto, modoEdicion, onSuccess }: ProductFo
           ubicacion: "",
         }
   )
+
+  // --- useEffect PARA CARGAR LOS PROVEEDORES CUANDO SE ABRE EL MODAL ---
+  useEffect(() => {
+    if (open) {
+      const fetchProveedores = async () => {
+        try {
+          const response = await fetch("http://localhost:8080/api/proveedores")
+          if (response.ok) {
+            const data = await response.json()
+            setListaProveedores(data)
+          }
+        } catch (error) {
+          console.error("Error al cargar proveedores:", error)
+          toast.error("No se pudo cargar la lista de proveedores.")
+        }
+      }
+      fetchProveedores()
+    }
+  }, [open]) // Se ejecuta cada vez que el valor de 'open' cambia
 
   const categorias = [
     "Electrónicos",
@@ -84,11 +104,8 @@ export function ProductFormModal({ producto, modoEdicion, onSuccess }: ProductFo
     ubicacion: string
   }
 
-  const handleInputChange = (field: keyof ProductFormData, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }))
+  const handleInputChange = (field: keyof typeof formData, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
   // =============================================================================================================
@@ -102,57 +119,27 @@ export function ProductFormModal({ producto, modoEdicion, onSuccess }: ProductFo
     e.preventDefault();
     setIsLoading(true);
 
+    const url = modoEdicion ? `http://localhost:8080/api/products/${producto?.id}` : 'http://localhost:8080/api/products';
+    const method = modoEdicion ? 'PUT' : 'POST';
+
     try {
         // La URL de tu API de Java que creamos
-        const response = await fetch(
-          modoEdicion
-            ? `http://localhost:8080/api/products/${producto?.id}`
-            : 'http://localhost:8080/api/products',
-          {
-            method: modoEdicion ? 'PUT' : 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(formData),
-          }
-        )
+        const response = await fetch(url, {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData),
+        });
 
-
-        if (!response.ok) {
-            // Si el backend devuelve un error, lo lanzamos para que lo capture el 'catch'
-            throw new Error('Error al guardar el producto');
-        }
-
-        // Si todo sale bien, leemos la respuesta del backend
-        const nuevoProductoGuardado = await response.json();
-        console.log('¡Producto guardado en la BD!:', nuevoProductoGuardado);
-        toast.success("Producto guardado con éxito")
-
-        setOpen(false); // Cierra el modal
-
-        if (onSuccess) onSuccess() // ✅ LLAMA LA FUNCIÓN QUE RECARGA LA LISTA
+        if (!response.ok) throw new Error('Error al guardar el producto');
+        toast.success(`Producto ${modoEdicion ? 'actualizado' : 'guardado'} con éxito`);
+        setOpen(false);
+        if (onSuccess) onSuccess(); // ✅ Llama la función que recarga la lista de productos
 
     } catch (error) {
-        console.error("Hubo un error en la petición fetch:", error);
-        toast.error("Error al guardar el producto")
-
+      toast.error(`Error al ${modoEdicion ? 'actualizar' : 'guardar'} el producto`);
     } finally {
-        setIsLoading(false); // Detiene el indicador de carga, tanto en éxito como en error
-
-        // Opcional: Resetear el formulario después de enviar
-        setFormData({
-            nombre: "",
-            descripcion: "",
-            categoria: "",
-            precio: "",
-            stock: "",
-            stockMinimo: "",
-            codigoBarras: "",
-            marca: "",
-            proveedor: "",
-            ubicacion: "",
-        });
-        
+      setIsLoading(false);
     }
-    
   };
 
   const isFormValid = formData.nombre && formData.categoria && formData.precio && formData.stock
@@ -333,14 +320,15 @@ export function ProductFormModal({ producto, modoEdicion, onSuccess }: ProductFo
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="proveedor">Proveedor</Label>
+                {/* --- SELECT DINÁMICO --- */}
                 <Select value={formData.proveedor} onValueChange={(value) => handleInputChange("proveedor", value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecciona un proveedor" />
                   </SelectTrigger>
                   <SelectContent>
-                    {proveedores.map((proveedor) => (
-                      <SelectItem key={proveedor} value={proveedor}>
-                        {proveedor}
+                    {listaProveedores.map((prov) => (
+                      <SelectItem key={prov.id} value={prov.nombreEmpresa}>
+                        {prov.nombreEmpresa}
                       </SelectItem>
                     ))}
                   </SelectContent>

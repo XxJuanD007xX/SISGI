@@ -1,8 +1,6 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -17,143 +15,135 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
 import { Plus, Building, Phone, Mail, MapPin, CreditCard, FileText } from "lucide-react"
+import { toast } from "sonner"
+import { Proveedor } from "./types"
 
-interface SupplierFormData {
-  nombre: string
-  contacto: string
-  telefono: string
-  email: string
-  direccion: string
-  ciudad: string
-  pais: string
-  codigoPostal: string
-  tipoProveedor: string
-  condicionesPago: string
-  diasCredito: string
-  descuentos: string
-  notas: string
-  sitioWeb: string
-  nit: string
+// Props del componente
+interface SupplierFormModalProps {
+  proveedor?: Proveedor
+  modoEdicion?: boolean
+  onSuccess?: () => void
+  children: React.ReactNode
 }
 
-export function SupplierFormModal() {
+export function SupplierFormModal({
+  proveedor,
+  modoEdicion = false,
+  onSuccess,
+  children,
+}: SupplierFormModalProps) {
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [formData, setFormData] = useState<SupplierFormData>({
-    nombre: "",
-    contacto: "",
+
+  // Estado inicial con todos los campos
+  const initialState: Proveedor = {
+    nombreEmpresa: "",
+    personaContacto: "",
     telefono: "",
     email: "",
+    nitRuc: "",
+    tipoProveedor: "",
+    sitioWeb: "",
     direccion: "",
     ciudad: "",
     pais: "",
     codigoPostal: "",
-    tipoProveedor: "",
     condicionesPago: "",
-    diasCredito: "",
-    descuentos: "",
-    notas: "",
-    sitioWeb: "",
-    nit: "",
-  })
-
-  const tiposProveedor = [
-    "Distribuidor Mayorista",
-    "Fabricante",
-    "Importador",
-    "Distribuidor Local",
-    "Proveedor de Servicios",
-    "Otro",
-  ]
-
-  const condicionesPago = [
-    "Contado",
-    "Crédito 15 días",
-    "Crédito 30 días",
-    "Crédito 45 días",
-    "Crédito 60 días",
-    "Crédito 90 días",
-  ]
-
-  const paises = [
-    "Colombia",
-    "México",
-    "Argentina",
-    "Chile",
-    "Perú",
-    "Ecuador",
-    "Venezuela",
-    "Brasil",
-    "Estados Unidos",
-    "España",
-    "Otro",
-  ]
-
-  const handleInputChange = (field: keyof SupplierFormData, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }))
+    diasCredito: 0,
+    descuentoGeneral: 0,
+    notasObservaciones: "",
+    estado: "Activo"
   }
 
+  const [formData, setFormData] = useState<Proveedor>(initialState)
+  
+  // Opciones para los menús desplegables
+  const tiposProveedor = ["Distribuidor Mayorista", "Fabricante", "Importador", "Otro"]
+  const condicionesPago = ["Contado", "Crédito 15 días", "Crédito 30 días", "Crédito 60 días"]
+  const paises = ["Colombia", "México", "Argentina", "Perú", "Otro"]
+
+  // Carga los datos del proveedor si estamos en modo de edición
+  useEffect(() => {
+    if (modoEdicion && proveedor) {
+      setFormData({ ...initialState, ...proveedor });
+    }
+  }, [modoEdicion, proveedor, open]);
+
+
+  // Maneja cambios en Inputs y Textareas
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { id, value } = e.target;
+    const finalValue = id === 'diasCredito' || id === 'descuentoGeneral' ? Number(value) : value;
+    setFormData((prev) => ({ ...prev, [id]: finalValue }));
+  };
+
+  // Maneja cambios en los Selects
+  const handleSelectChange = (field: keyof Proveedor, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // Lógica para enviar el formulario al backend
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
 
-    // Simular llamada a API
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+    const url = modoEdicion
+      ? `http://localhost:8080/api/proveedores/${proveedor?.id}`
+      : "http://localhost:8080/api/proveedores"
+    const method = modoEdicion ? "PUT" : "POST"
 
-    console.log("Datos del proveedor:", formData)
+    try {
+      const response = await fetch(url, {
+        method: method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      })
 
-    // Resetear formulario
-    setFormData({
-      nombre: "",
-      contacto: "",
-      telefono: "",
-      email: "",
-      direccion: "",
-      ciudad: "",
-      pais: "",
-      codigoPostal: "",
-      tipoProveedor: "",
-      condicionesPago: "",
-      diasCredito: "",
-      descuentos: "",
-      notas: "",
-      sitioWeb: "",
-      nit: "",
-    })
+      if (!response.ok) {
+        throw new Error(`Error al ${modoEdicion ? "actualizar" : "guardar"} el proveedor`)
+      }
 
-    setIsLoading(false)
-    setOpen(false)
+      toast.success(`Proveedor ${modoEdicion ? "actualizado" : "guardado"} con éxito`)
+      setOpen(false)
+      if (onSuccess) onSuccess()
+    } catch (error) {
+      console.error("Error en la petición fetch:", error)
+      toast.error(`Error al ${modoEdicion ? "actualizar" : "guardar"} el proveedor`)
+    } finally {
+      setIsLoading(false)
+      if (!modoEdicion) {
+        setFormData(initialState)
+      }
+    }
   }
 
-  const isFormValid = formData.nombre && formData.contacto && formData.telefono && formData.email
+  const isFormValid = formData.nombreEmpresa && formData.personaContacto && formData.telefono && formData.email && formData.nitRuc;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="w-fit">
-          <Plus className="h-4 w-4 mr-2" />
-          Nuevo Proveedor
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground/40 scrollbar-track-muted/10">
+      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+
         <DialogHeader className="relative mb-2">
           <div className="flex items-center gap-4 p-4 rounded-t-lg bg-gradient-to-r from-primary/10 via-background to-background border-b">
             <div className="flex items-center justify-center rounded-full bg-primary/20 h-12 w-12 shadow-inner">
-              {/* Cambia el icono según el formulario */}
               <Building className="h-7 w-7" />
             </div>
             <div>
               <DialogTitle className="text-2xl font-extrabold tracking-tight">
-                Agregar Nuevo Proveedor
+                {modoEdicion ? "Editar Proveedor" : "Agregar Nuevo Proveedor"}
               </DialogTitle>
               <DialogDescription className="text-muted-foreground mt-1 text-base">
-                Registra un nuevo proveedor en el sistema.<br />
-                <span className="text-destructive font-semibold">*</span> Campos obligatorios.
+                {modoEdicion
+                  ? "Modifica la información del Proveedor y guarda los cambios."
+                  : (
+                    <>
+                      Completa la información del Proveedor.<br />
+                      <span className="text-destructive font-semibold">*</span>Campos obligatorios.
+                    </>
+                  )
+                }
               </DialogDescription>
             </div>
           </div>
@@ -161,269 +151,129 @@ export function SupplierFormModal() {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Información de la Empresa */}
-          <div className="rounded-lg border bg-muted/50 p-4 mb-6 shadow-sm">
-            <div className="flex items-center gap-2 mb-3">
-              <Building className="h-4 w-4" />
+          <div className="rounded-lg border bg-muted/50 p-4 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <Building className="h-4 w-4 text-primary" />
               <h3 className="font-semibold text-lg">Información de la Empresa</h3>
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="nombre">Nombre de la Empresa *</Label>
-                <Input
-                  id="nombre"
-                  placeholder="Ej: Distribuidora Tech S.A.S"
-                  value={formData.nombre}
-                  onChange={(e) => handleInputChange("nombre", e.target.value)}
-                  required
-                />
+                <Label htmlFor="nombre_empresa">Nombre de la Empresa *</Label>
+                <Input id="nombreEmpresa" value={formData.nombreEmpresa} onChange={handleInputChange} required />
               </div>
-
               <div className="space-y-2">
-                <Label htmlFor="nit">NIT / RUC</Label>
-                <Input
-                  id="nit"
-                  placeholder="Ej: 900123456-7"
-                  value={formData.nit}
-                  onChange={(e) => handleInputChange("nit", e.target.value)}
-                />
+                <Label htmlFor="nit_ruc">NIT / RUC *</Label>
+                <Input id="nitRuc" value={formData.nitRuc || ''} onChange={handleInputChange} required/>
               </div>
-            </div><br />
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="tipoProveedor">Tipo de Proveedor</Label>
-                <Select
-                  value={formData.tipoProveedor}
-                  onValueChange={(value) => handleInputChange("tipoProveedor", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona el tipo" />
-                  </SelectTrigger>
+                <Label htmlFor="tipo_proveedor">Tipo de Proveedor</Label>
+                <Select value={formData.tipoProveedor || ''} onValueChange={(value) => handleSelectChange("tipoProveedor", value)}>
+                  <SelectTrigger><SelectValue placeholder="Selecciona el tipo" /></SelectTrigger>
                   <SelectContent>
-                    {tiposProveedor.map((tipo) => (
-                      <SelectItem key={tipo} value={tipo}>
-                        {tipo}
-                      </SelectItem>
-                    ))}
+                    {tiposProveedor.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
-
               <div className="space-y-2">
-                <Label htmlFor="sitioWeb">Sitio Web</Label>
-                <Input
-                  id="sitioWeb"
-                  placeholder="https://www.ejemplo.com"
-                  value={formData.sitioWeb}
-                  onChange={(e) => handleInputChange("sitioWeb", e.target.value)}
-                />
+                <Label htmlFor="sitio_web">Sitio Web</Label>
+                <Input id="sitioWeb" value={formData.sitioWeb || ''} onChange={handleInputChange} />
               </div>
             </div>
           </div>
 
           {/* Información de Contacto */}
-          <div className="rounded-lg border bg-muted/50 p-4 mb-6 shadow-sm">
-            <div className="flex items-center gap-2 mb-3">
-              <Phone className="h-4 w-4" />
+          <div className="rounded-lg border bg-muted/50 p-4 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <Phone className="h-4 w-4 text-primary" />
               <h3 className="font-semibold text-lg">Información de Contacto</h3>
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-              <div className="space-y-2">
-                <Label htmlFor="contacto">
-                  <div className="flex items-center gap-1">
-                    Persona de Contacto *
-                  </div>
-                </Label>
-                <Input
-                  id="contacto"
-                  placeholder="Ej: Carlos Mendez"
-                  value={formData.contacto}
-                  onChange={(e) => handleInputChange("contacto", e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="telefono">
-                  <div className="flex items-center gap-1">
-                    <Phone className="h-3 w-3" />
-                    Teléfono *
-                  </div>
-                </Label>
-                <Input
-                  id="telefono"
-                  placeholder="+57 300 123 4567"
-                  value={formData.telefono}
-                  onChange={(e) => handleInputChange("telefono", e.target.value)}
-                  required
-                />
-              </div>
-              
-            </div><br />
-
-            <div className="space-y-2">
-              <Label htmlFor="email">
-                <div className="flex items-center gap-1">
-                  <Mail className="h-3 w-3" />
-                  Email *
+                <div className="space-y-2">
+                    <Label htmlFor="persona_contacto">Persona de Contacto *</Label>
+                    <Input id="personaContacto" value={formData.personaContacto} onChange={handleInputChange} required />
                 </div>
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="contacto@empresa.com"
-                value={formData.email}
-                onChange={(e) => handleInputChange("email", e.target.value)}
-                required
-              />
+                <div className="space-y-2">
+                    <Label htmlFor="telefono">Teléfono *</Label>
+                    <Input id="telefono" value={formData.telefono} onChange={handleInputChange} required />
+                </div>
+            </div>
+            <div className="mt-4 space-y-2">
+                <Label htmlFor="email">Email *</Label>
+                <Input id="email" type="email" value={formData.email} onChange={handleInputChange} required />
             </div>
           </div>
-
+          
           {/* Dirección */}
-          <div className="rounded-lg border bg-muted/50 p-4 mb-6 shadow-sm">
-            <div className="flex items-center gap-2 mb-3">
-              <MapPin className="h-4 w-4" />
-              <h3 className="font-semibold text-lg">Dirección</h3>
+          <div className="rounded-lg border bg-muted/50 p-4 shadow-sm">
+             <div className="flex items-center gap-2 mb-4">
+                <MapPin className="h-4 w-4 text-primary" />
+                <h3 className="font-semibold text-lg">Dirección</h3>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="direccion">Dirección Completa</Label>
-              <Textarea
-                id="direccion"
-                placeholder="Calle, número, barrio, referencias..."
-                value={formData.direccion}
-                onChange={(e) => handleInputChange("direccion", e.target.value)}
-                rows={2}
-              />
-            </div><br />
-
+            <div className="space-y-2 mb-4">
+                <Label htmlFor="direccion">Dirección Completa</Label>
+                <Textarea id="direccion" value={formData.direccion || ''} onChange={handleInputChange} rows={2} />
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="ciudad">Ciudad</Label>
-                <Input
-                  id="ciudad"
-                  placeholder="Ej: Bogotá"
-                  value={formData.ciudad}
-                  onChange={(e) => handleInputChange("ciudad", e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="pais">País</Label>
-                <Select value={formData.pais} onValueChange={(value) => handleInputChange("pais", value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona país" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {paises.map((pais) => (
-                      <SelectItem key={pais} value={pais}>
-                        {pais}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="codigoPostal">Código Postal</Label>
-                <Input
-                  id="codigoPostal"
-                  placeholder="110111"
-                  value={formData.codigoPostal}
-                  onChange={(e) => handleInputChange("codigoPostal", e.target.value)}
-                />
-              </div>
+                <div className="space-y-2">
+                    <Label htmlFor="ciudad">Ciudad</Label>
+                    <Input id="ciudad" value={formData.ciudad || ''} onChange={handleInputChange} />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="pais">País</Label>
+                     <Select value={formData.pais || ''} onValueChange={(value) => handleSelectChange("pais", value)}>
+                        <SelectTrigger><SelectValue placeholder="Selecciona país" /></SelectTrigger>
+                        <SelectContent>
+                            {paises.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="codigo_postal">Código Postal</Label>
+                    <Input id="codigoPostal" value={formData.codigoPostal || ''} onChange={handleInputChange} />
+                </div>
             </div>
           </div>
 
           {/* Condiciones Comerciales */}
-          <div className="rounded-lg border bg-muted/50 p-4 mb-6 shadow-sm">
-            <div className="flex items-center gap-2 mb-3">
-              <CreditCard className="h-4 w-4" />
-              <h3 className="font-semibold text-lg">Condiciones Comerciales</h3>
+            <div className="rounded-lg border bg-muted/50 p-4 shadow-sm">
+                <div className="flex items-center gap-2 mb-4">
+                    <CreditCard className="h-4 w-4 text-primary" />
+                    <h3 className="font-semibold text-lg">Condiciones Comerciales</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="condiciones_pago">Condiciones de Pago</Label>
+                        <Select value={formData.condicionesPago || ''} onValueChange={(value) => handleSelectChange("condicionesPago", value)}>
+                           <SelectTrigger><SelectValue placeholder="Selecciona condición" /></SelectTrigger>
+                           <SelectContent>
+                               {condicionesPago.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                           </SelectContent>
+                       </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="dias_credito">Días de Crédito</Label>
+                        <Input id="diasCredito" type="number" value={formData.diasCredito || 0} onChange={handleInputChange} />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="descuento_general">Descuentos (%)</Label>
+                        <Input id="descuentoGeneral" type="number" step="0.1" value={formData.descuentoGeneral || 0} onChange={handleInputChange} />
+                    </div>
+                </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="condicionesPago">Condiciones de Pago</Label>
-                <Select
-                  value={formData.condicionesPago}
-                  onValueChange={(value) => handleInputChange("condicionesPago", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona condición" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {condicionesPago.map((condicion) => (
-                      <SelectItem key={condicion} value={condicion}>
-                        {condicion}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            {/* Información Adicional */}
+             <div className="rounded-lg border bg-muted/50 p-4 shadow-sm">
+                 <div className="flex items-center gap-2 mb-4">
+                    <FileText className="h-4 w-4 text-primary" />
+                    <h3 className="font-semibold text-lg">Información Adicional</h3>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="notas_observaciones">Notas y Observaciones</Label>
+                    <Textarea id="notasObservaciones" value={formData.notasObservaciones || ''} onChange={handleInputChange} rows={3}/>
+                </div>
+            </div><hr />
 
-              <div className="space-y-2">
-                <Label htmlFor="diasCredito">Días de Crédito</Label>
-                <Input
-                  id="diasCredito"
-                  type="number"
-                  placeholder="30"
-                  value={formData.diasCredito}
-                  onChange={(e) => handleInputChange("diasCredito", e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="descuentos">Descuentos (%)</Label>
-                <Input
-                  id="descuentos"
-                  type="number"
-                  step="0.1"
-                  placeholder="5.0"
-                  value={formData.descuentos}
-                  onChange={(e) => handleInputChange("descuentos", e.target.value)}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Notas Adicionales */}
-          <div className="rounded-lg border bg-muted/50 p-4 mb-6 shadow-sm">
-            <div className="flex items-center gap-2 mb-3">
-              <FileText className="h-4 w-4" />
-              <h3 className="font-semibold text-lg">Información Adicional</h3>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="notas">Notas y Observaciones</Label>
-              <Textarea
-                id="notas"
-                placeholder="Información adicional sobre el proveedor, productos que maneja, horarios de atención, etc."
-                value={formData.notas}
-                onChange={(e) => handleInputChange("notas", e.target.value)}
-                rows={3}
-              />
-            </div>
-          </div><hr />
-
-          {/* Preview */}
-          {isFormValid && (
-            <div className="p-4 bg-muted/50 rounded-lg">
-              <h4 className="font-medium mb-2">Vista Previa</h4>
-              <div className="flex flex-wrap gap-2">
-                <Badge variant="outline">{formData.nombre}</Badge>
-                <Badge variant="secondary">{formData.contacto}</Badge>
-                {formData.tipoProveedor && <Badge variant="outline">{formData.tipoProveedor}</Badge>}
-                {formData.ciudad && <Badge variant="outline">{formData.ciudad}</Badge>}
-              </div>
-            </div>
-          )}
-
-          <DialogFooter className="flex flex-col sm:flex-row gap-2">
+          <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={isLoading}>
               Cancelar
             </Button>
