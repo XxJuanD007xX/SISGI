@@ -1,3 +1,4 @@
+// INTERFAZ PARA PROVEEDOR
 export interface Product {
   id: number
   nombre: string
@@ -12,7 +13,7 @@ export interface Product {
   ubicacion?: string
 }
 
-// NUEVA INTERFAZ PARA PROVEEDOR
+// INTERFAZ PARA PROVEEDOR
 export interface Proveedor {
   id?: number;
   nombreEmpresa: string; 
@@ -31,4 +32,14 @@ export interface Proveedor {
   descuentoGeneral?: number; 
   notasObservaciones?: string; 
   estado?: string;
+}
+
+// INTERFAZ PARA ORDEN DE COMPRA
+export interface OrdenCompra {
+  id: number;
+  proveedor: Proveedor; 
+  fechaOrden: string;  
+  estado: string; // Ej: "Pendiente", "Recibido"
+  total: number;
+  observaciones?: string; 
 }

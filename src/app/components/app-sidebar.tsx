@@ -2,7 +2,7 @@
 
 import type * as React from "react"
 import { usePathname } from "next/navigation"
-import { BarChart3, Package, Users, Truck, Settings, Home, Bell, Calendar, FileText, Database } from "lucide-react"
+import { BarChart3, Package, Users, Truck, Settings, Home, ShoppingCart, Bell, Calendar, FileText, Database } from "lucide-react"
 import { UserButton, useUser } from "@clerk/nextjs"
 
 import {
@@ -65,6 +65,12 @@ const data = {
         { title: "Órdenes de Compra", url: "/dashboard/proveedores/ordenes" },
         { title: "Nuevo Proveedor", url: "/dashboard/proveedores/nuevo" },
       ],
+    },
+    {
+      title: "Órdenes de Compra",
+      url: "/dashboard/ordenes",
+      icon: ShoppingCart, // Asegúrate de importar ShoppingCart de lucide-react
+      paths: ["/dashboard/ordenes"],
     },
     {
       title: "Reportes y Análisis",
