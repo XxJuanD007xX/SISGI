@@ -1,5 +1,3 @@
-"use client"
-
 import { AppSidebar } from "@/app/components/app-sidebar"
 import {
   Breadcrumb,
@@ -11,47 +9,55 @@ import {
 } from "@/components/ui/breadcrumb"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { Users, Plus, Search, UserCheck, Shield } from "lucide-react"
+import { Users, UserCheck, Shield, ExternalLink } from "lucide-react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { clerkClient } from "@clerk/nextjs/server"
+import Link from 'next/link'
+import type { User } from "@clerk/nextjs/server"; 
 
-export default function UsuariosPage() {
-  const usuarios = [
-    {
-      id: 1,
-      nombre: "Juan Pérez",
-      email: "juan@variedadesdipal.com",
-      rol: "Administrador",
-      estado: "Activo",
-      ultimoAcceso: "Hace 2 horas",
-    },
-    {
-      id: 2,
-      nombre: "María González",
-      email: "maria@variedadesdipal.com",
-      rol: "Agente",
-      estado: "Activo",
-      ultimoAcceso: "Hace 1 día",
-    },
-    {
-      id: 3,
-      nombre: "Carlos Rodríguez",
-      email: "carlos@variedadesdipal.com",
-      rol: "Agente",
-      estado: "Inactivo",
-      ultimoAcceso: "Hace 1 semana",
-    },
-    {
-      id: 4,
-      nombre: "Ana López",
-      email: "ana@variedadesdipal.com",
-      rol: "Agente",
-      estado: "Activo",
-      ultimoAcceso: "Hace 3 horas",
-    },
-  ]
+// Definimos explícitamente el tipo para un usuario de Clerk para mejorar la autocompletado y seguridad de tipos.
+type ClerkUser = User;
+
+export default async function UsuariosPage() {
+  
+  // --- PASO 1: Obtenemos el cliente esperando la promesa de clerkClient() ---
+  const client = await clerkClient();
+  
+  // --- PASO 2: Ahora sí, usamos el objeto 'client' para llamar a la API ---
+  const userList = await client.users.getUserList({ limit: 50 });
+  const usuarios = userList.data; // <-- array de usuarios
+  const totalUsuarios = await client.users.getCount();
+  
+  const administradores = usuarios.filter(u => u.publicMetadata?.role === 'Administrador').length;
+  const usuariosActivos = totalUsuarios; 
+
+  const formatLastSignIn = (date: Date | null) => {
+    if (!date) return 'Nunca';
+    return new Intl.DateTimeFormat('es-ES', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric'
+    }).format(date);
+  };
+
+  // Función para obtener el nombre completo o un fallback
+  const getFullName = (usuario: ClerkUser) => {
+    if (usuario.firstName && usuario.lastName) {
+      return `${usuario.firstName} ${usuario.lastName}`;
+    }
+    return usuario.username || usuario.emailAddresses[0]?.emailAddress || 'Usuario desconocido';
+  };
+
+  const usuariosOrdenados = [...usuarios].sort((a, b) => {
+    const rolA = a.publicMetadata?.role === "Administrador" ? -1 : 1;
+    const rolB = b.publicMetadata?.role === "Administrador" ? -1 : 1;
+    return rolA - rolB;
+  });
 
   return (
     <div className="dark">
@@ -62,7 +68,7 @@ export default function UsuariosPage() {
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
             <Breadcrumb>
-              <BreadcrumbList>
+               <BreadcrumbList>
                 <BreadcrumbItem>
                   <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
                 </BreadcrumbItem>
@@ -75,19 +81,20 @@ export default function UsuariosPage() {
           </header>
 
           <div className="flex flex-1 flex-col gap-4 p-4">
-            {/* Header Section */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
                 <h1 className="text-3xl font-bold tracking-tight">Gestión de Usuarios</h1>
                 <p className="text-muted-foreground">Administra usuarios, roles y permisos del sistema</p>
               </div>
-              <Button className="w-fit">
-                <Plus className="h-4 w-4 mr-2" />
-                Nuevo Usuario
+              <Button asChild className="w-fit">
+                <Link href="https://dashboard.clerk.com/users" target="_blank">
+                  <Shield className="h-4 w-4 mr-2" />
+                  Gestionar en Clerk
+                  <ExternalLink className="h-4 w-4 ml-2" />
+                </Link>
               </Button>
             </div>
 
-            {/* Stats Cards */}
             <div className="grid gap-4 md:grid-cols-3">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -95,72 +102,67 @@ export default function UsuariosPage() {
                   <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">12</div>
-                  <p className="text-xs text-muted-foreground">+2 este mes</p>
+                  <div className="text-2xl font-bold">{totalUsuarios}</div>
+                  <p className="text-xs text-muted-foreground">Usuarios registrados en Clerk</p>
                 </CardContent>
               </Card>
-
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Usuarios Activos</CardTitle>
                   <UserCheck className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">10</div>
-                  <p className="text-xs text-muted-foreground">83% del total</p>
+                  <div className="text-2xl font-bold">{usuariosActivos}</div>
+                  <p className="text-xs text-muted-foreground">Actividad reciente</p>
                 </CardContent>
               </Card>
-
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Administradores</CardTitle>
                   <Shield className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">3</div>
-                  <p className="text-xs text-muted-foreground">25% del total</p>
+                  <div className="text-2xl font-bold">{administradores}</div>
+                  <p className="text-xs text-muted-foreground">Con rol de administrador</p>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Search and Filter */}
             <Card>
-              <CardHeader>
+               <CardHeader>
                 <CardTitle>Lista de Usuarios</CardTitle>
-                <CardDescription>Gestiona todos los usuarios del sistema</CardDescription>
+                <CardDescription>Mostrando los primeros {usuarios.length} usuarios de tu instancia de Clerk.</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center space-x-2 mb-4">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Buscar usuarios..." className="pl-8" />
-                  </div>
-                  <Button variant="outline">Filtros</Button>
-                </div>
-
-                {/* Users Table */}
                 <div className="space-y-4">
-                  {usuarios.map((usuario) => (
+                  {usuariosOrdenados.map((usuario) => (
                     <div
                       key={usuario.id}
-                      className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg gap-4"
+                      className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg gap-4"
                     >
-                      <div className="flex items-center space-x-4 flex-1">
-                        <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                          <Users className="h-5 w-5" />
-                        </div>
+                      {/* Lado izquierdo: Avatar, Nombre y Email */}
+                      <div className="flex items-center gap-4">
+                        <Avatar className="h-12 w-12 flex-shrink-0">
+                          <AvatarImage src={usuario.imageUrl} />
+                          <AvatarFallback>
+                            {usuario.firstName?.charAt(0)}
+                            {usuario.lastName?.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
                         <div>
-                          <p className="font-medium">{usuario.nombre}</p>
-                          <p className="text-sm text-muted-foreground">{usuario.email}</p>
+                          <p className="font-medium">{getFullName(usuario)}</p>
+                          <p className="text-sm text-muted-foreground">{usuario.emailAddresses[0]?.emailAddress}</p>
                         </div>
                       </div>
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-                        <Badge variant={usuario.rol === "Administrador" ? "default" : "secondary"}>{usuario.rol}</Badge>
-                        <Badge variant={usuario.estado === "Activo" ? "default" : "secondary"}>{usuario.estado}</Badge>
-                        <div className="text-sm text-muted-foreground">{usuario.ultimoAcceso}</div>
-                        <Button variant="outline" size="sm">
-                          Editar
-                        </Button>
+
+                      {/* Lado derecho: Rol y Último Acceso */}
+                      <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto border-t sm:border-t-0 pt-4 sm:pt-0">
+                         <Badge variant={(usuario.publicMetadata?.role as string) === "Administrador" ? "default" : "secondary"}>
+                           {(usuario.publicMetadata?.role as string) || 'Agente'}
+                         </Badge>
+                         <div className="text-sm text-muted-foreground text-right">
+                            {formatLastSignIn(usuario.lastSignInAt ? new Date(usuario.lastSignInAt) : null)}
+                         </div>
                       </div>
                     </div>
                   ))}

@@ -20,70 +20,60 @@ import { Palette, Check, Settings, Moon, Bell, Shield, Database } from "lucide-r
 export default function ConfiguracionPage() {
   const { theme, setTheme } = useTheme()
 
-  const handleThemeChange = (name: string) => {
-    setTheme(name as any)
-    if (typeof window !== "undefined") {
-      const root = document.documentElement // <--- Cambia aquí
-      root.classList.remove(
-        "theme-default",
-        "theme-green",
-        "theme-purple",
-        "theme-orange",
-        "theme-red",
-        "theme-blue"
-      )
-      root.classList.add(`theme-${name}`)
-    }
-  }
-
   const colorThemes = [
     {
       name: "default",
-      label: "Azul Predeterminado",
-      description: "Tema azul clásico y profesional",
-      primary: "hsl(221, 83%, 53%)",
-      secondary: "hsl(210, 40%, 95%)",
-      accent: "hsl(210, 40%, 95%)",
+      label: "SISGI Original",
+      description: "Tema por defecto con tonos grises y acentos en magenta.",
+      palette: ["hsl(240 10% 12%)", "hsl(240 5% 25%)", "hsl(344 100% 80%)", "hsl(344 100% 65%)", "hsl(344 100% 56%)"],
+    },
+     {
+      name: "slate",
+      label: "Grafito",
+      description: "Un look neutro, moderno y minimalista.",
+      palette: ["hsl(220 15% 12%)", "hsl(220 10% 25%)", "hsl(220 10% 50%)", "hsl(220 10% 70%)", "hsl(220 10% 90%)"],
     },
     {
-      name: "green",
-      label: "Verde Naturaleza",
-      description: "Inspirado en la naturaleza y crecimiento",
-      primary: "hsl(142, 76%, 36%)",
-      secondary: "hsl(138, 76%, 97%)",
-      accent: "hsl(138, 76%, 97%)",
-    },
-    {
-      name: "purple",
-      label: "Púrpura Elegante",
-      description: "Sofisticado y moderno",
-      primary: "hsl(262, 83%, 58%)",
-      secondary: "hsl(270, 95%, 98%)",
-      accent: "hsl(270, 95%, 98%)",
-    },
-    {
-      name: "orange",
-      label: "Naranja Energético",
-      description: "Vibrante y dinámico",
-      primary: "hsl(25, 95%, 53%)",
-      secondary: "hsl(33, 100%, 96%)",
-      accent: "hsl(33, 100%, 96%)",
+      name: "stone",
+      label: "Piedra",
+      description: "Tonos tierra cálidos, orgánicos y profesionales.",
+      palette: ["hsl(30 15% 12%)", "hsl(30 10% 25%)", "hsl(30 15% 45%)", "hsl(30 25% 65%)", "hsl(30 20% 90%)"],
     },
     {
       name: "red",
-      label: "Rojo Corporativo",
-      description: "Audaz y llamativo",
-      primary: "hsl(0, 84%, 60%)",
-      secondary: "hsl(0, 85%, 97%)",
-      accent: "hsl(0, 85%, 97%)",
+      label: "Fuego",
+      description: "Una paleta de colores vibrante y enérgica.",
+      palette: ["hsl(15 70% 12%)", "hsl(10 70% 25%)", "hsl(5 80% 45%)", "hsl(0 84% 60%)", "hsl(0 80% 80%)"],
+    },
+    {
+      name: "green",
+      label: "Bosque Nocturno",
+      description: "Un tema sereno con verdes oscuros y profundos.",
+      palette: ["hsl(142 80% 10%)", "hsl(142 75% 18%)", "hsl(142 70% 30%)", "hsl(142 76% 46%)", "hsl(142 70% 80%)"],
     },
     {
       name: "blue",
       label: "Azul Océano",
-      description: "Tranquilo y confiable",
-      primary: "hsl(200, 98%, 39%)",
-      secondary: "hsl(204, 100%, 97%)",
-      accent: "hsl(204, 100%, 97%)",
+      description: "Una paleta tranquila y confiable inspirada en el océano.",
+      palette: ["hsl(215 80% 12%)", "hsl(215 75% 22%)", "hsl(210 80% 35%)", "hsl(210 98% 59%)", "hsl(210 90% 80%)"],
+    },
+    {
+      name: "purple",
+      label: "Púrpura Elegante",
+      description: "Un tema sofisticado y moderno en tonos púrpuras.",
+      palette: ["hsl(262 80% 12%)", "hsl(262 75% 22%)", "hsl(262 70% 40%)", "hsl(262 83% 72%)", "hsl(262 80% 90%)"],
+    },
+     {
+      name: "rose",
+      label: "Rosa Cuarzo",
+      description: "Un tema suave con un toque de elegancia y calidez.",
+      palette: ["hsl(340 60% 12%)", "hsl(340 55% 25%)", "hsl(340 80% 45%)", "hsl(340 90% 65%)", "hsl(340 80% 90%)"],
+    },
+    {
+      name: "cyan",
+      label: "Cian neón",
+      description: "Moderno y tecnológico, con un toque vibrante.",
+      palette: ["hsl(190 80% 12%)", "hsl(185 75% 22%)", "hsl(180 80% 35%)", "hsl(180 90% 45%)", "hsl(180 80% 85%)"],
     },
   ]
 
@@ -164,26 +154,20 @@ export default function ConfiguracionPage() {
                       onClick={() => setTheme(colorTheme.name as any)}
                     >
                       {theme === colorTheme.name && (
-                        <div className="absolute top-2 right-2">
-                          <div className="rounded-full bg-primary p-1">
-                            <Check className="h-3 w-3 text-primary-foreground" />
-                          </div>
+                        <div className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary">
+                          <Check className="h-3 w-3 text-primary-foreground" />
                         </div>
                       )}
-
                       <div className="space-y-3">
-                        <div className="flex items-center space-x-2">
-                          <div
-                            className="h-4 w-4 rounded-full border"
-                            style={{ backgroundColor: colorTheme.primary }}
-                          />
-                          <div
-                            className="h-4 w-4 rounded-full border"
-                            style={{ backgroundColor: colorTheme.secondary }}
-                          />
-                          <div className="h-4 w-4 rounded-full border" style={{ backgroundColor: colorTheme.accent }} />
+                        <div className="flex h-8 w-full items-center space-x-1 overflow-hidden rounded-md border">
+                          {colorTheme.palette.map((color, index) => (
+                            <div
+                              key={index}
+                              className="h-full w-full"
+                              style={{ backgroundColor: color }}
+                            />
+                          ))}
                         </div>
-
                         <div>
                           <h3 className="font-medium">{colorTheme.label}</h3>
                           <p className="text-sm text-muted-foreground">{colorTheme.description}</p>
@@ -192,7 +176,6 @@ export default function ConfiguracionPage() {
                     </div>
                   ))}
                 </div>
-
                 <div className="mt-6 p-4 bg-muted/50 rounded-lg">
                   <div className="flex items-center gap-2 text-sm">
                     <Moon className="h-4 w-4" />

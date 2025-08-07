@@ -24,9 +24,10 @@ interface ProductFormModalProps {
   producto?: Product // opcional, para edición
   modoEdicion?: boolean
   onSuccess?: () => void
+  children: React.ReactNode
 }
 
-export function ProductFormModal({ producto, modoEdicion, onSuccess }: ProductFormModalProps) {
+export function ProductFormModal({ producto, modoEdicion, onSuccess, children }: ProductFormModalProps) {
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -147,10 +148,7 @@ export function ProductFormModal({ producto, modoEdicion, onSuccess }: ProductFo
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="w-fit">
-          <Plus className="h-4 w-4 mr-2" />
-          Nuevo Producto
-        </Button>
+        {children}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
 

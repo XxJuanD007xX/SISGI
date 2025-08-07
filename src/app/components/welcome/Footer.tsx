@@ -1,20 +1,27 @@
-export default function Footer() {
+import { LayoutGrid } from 'lucide-react';
 
+export default function Footer() {
     const currentYear = new Date().getFullYear();
     
     return (
 
-        <footer className="py-10 border-t border-border/40 bg-background">
+        <footer className="py-10 border-t border-border/40 bg-card/30">
 
-            <div className="container mx-auto text-center text-muted-foreground px-4 md:px-6">
+            <div className="container mx-auto max-w-7xl px-4 md:px-6 flex flex-col md:flex-row justify-between items-center text-center md:text-left">
 
-                <p className="mb-2">SISGI - Sistema de Gestión de Inventarios para Variedades Dipal</p>
-                <p>&copy; {currentYear} Todos los derechos reservados.</p>
+                <div className="flex items-center gap-2 mb-4 md:mb-0">
+                    <LayoutGrid className="h-6 w-6 text-primary" />
+                    <span className="text-lg font-headline font-semibold">Con ❤️ para SISGI</span>
+                </div>
+
+                <p className="text-sm text-muted-foreground">
+                    &copy; {currentYear} SISGI - Variedades Dipal. Todos los derechos reservados.
+                </p>
 
             </div>
-            
-        </footer>
 
+        </footer>
+        
     );
 
 }
