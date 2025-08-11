@@ -17,7 +17,7 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { Package, Plus, Search, AlertTriangle, TrendingUp, DollarSign } from "lucide-react"
-import { ProductFormModal } from "../../components/product-form-modal"
+import { ProductFormModal } from "../../components/product-form-modal";
 import { ProductDrawer } from "../../components/product-drawer"
 import { Product } from "@/app/components/types"
 
@@ -40,6 +40,10 @@ export default function ProductosPage() {
   const categoriasUnicas = Array.from(new Set(productos.map(p => p.categoria)));
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<string | null>(null);
   const [estadoSeleccionado, setEstadoSeleccionado] = useState<string | null>(null);
+  
+  const productosConBajoStock = productos.filter(
+    (p) => p.stock > 0 && p.stock <= (p.stockMinimo ?? 5)
+  );
   
   const productosFiltrados = productos.filter(producto => {
     // Filtro búsqueda
@@ -103,7 +107,12 @@ export default function ProductosPage() {
                 <p className="text-muted-foreground">Control de inventario, categorías y stock de productos</p>
               </div>
               {/* Botón para registrar nuevo producto */}
-              <ProductFormModal onSuccess={fetchProductos} />
+              <ProductFormModal onSuccess={fetchProductos}>
+                <Button className="w-fit">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nuevo Producto
+                </Button>
+              </ProductFormModal>
             </div>
 
             {/* Stats Cards */}
@@ -123,21 +132,29 @@ export default function ProductosPage() {
               </Card>
 
               {/* Stock Bajo */}
-              <Card>
+              <Card className="flex flex-col">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Stock Bajo</CardTitle>
-                  <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                    <CardTitle className="text-sm font-medium">Stock Bajo</CardTitle>
+                    <AlertTriangle className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-orange-600">
-                    {
-                      productos.filter(
-                        (p) => p.stock <= (p.stockMinimo ?? 5) && p.stock > 0
-                      ).length
-                    }
-                  </div>
-                  <p className="text-xs text-muted-foreground">Requieren atención</p>
+                    <div className="text-2xl font-bold text-orange-600">
+                        {productosConBajoStock.length}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                        Productos requieren atención
+                    </p>
                 </CardContent>
+                <div className="mt-auto p-6 pt-0">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => setEstadoSeleccionado("Stock Bajo")}
+                    >
+                        Revisar Productos
+                    </Button>
+                </div>
               </Card>
 
               {/* Valor Inventario */}

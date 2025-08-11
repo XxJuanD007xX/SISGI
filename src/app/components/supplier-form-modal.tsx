@@ -74,9 +74,17 @@ export function SupplierFormModal({
   // Maneja cambios en Inputs y Textareas
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
-    const finalValue = id === 'diasCredito' || id === 'descuentoGeneral' ? Number(value) : value;
+
+    let finalValue: string | number = value;
+
+    if ((id === 'diasCredito' || id === 'descuentoGeneral') && value === '') {
+        finalValue = 0;
+    } else if (id === 'diasCredito' || id === 'descuentoGeneral') {
+        finalValue = Number(value);
+    }
+
     setFormData((prev) => ({ ...prev, [id]: finalValue }));
-  };
+};
 
   // Maneja cambios en los Selects
   const handleSelectChange = (field: keyof Proveedor, value: string) => {

@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react";
 import { AppSidebar } from "@/app/components/app-sidebar"
 import {
   Breadcrumb,
@@ -14,9 +15,37 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { BarChart3, Plus, FileText, Download, Calendar, TrendingUp } from "lucide-react"
+import { BarChart3, Plus, FileText, Download, Calendar, TrendingUp, DollarSign, Truck, Clock } from "lucide-react"
+
+interface ReporteStats {
+  totalProductos: number;
+  valorInventario: number;
+  totalProveedores: number;
+  ordenesPendientes: number;
+}
 
 export default function ReportesPage() {
+
+  const [stats, setStats] = useState<ReporteStats | null>(null);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await fetch("http://localhost:8080/api/reportes/dashboard-stats");
+        if (response.ok) {
+          const data: ReporteStats = await response.json();
+          setStats(data);
+        } else {
+          console.error("Error al obtener las estadísticas del dashboard");
+        }
+      } catch (error) {
+        console.error("Error de conexión al obtener estadísticas:", error);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
   const reportes = [
     {
       id: 1,
@@ -87,22 +116,60 @@ export default function ReportesPage() {
 
             {/* Quick Report Types */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              {tiposReporte.map((tipo, index) => (
-                <Card key={index} className="cursor-pointer hover:shadow-md transition-shadow">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center space-x-2">
-                      <tipo.icono className="h-5 w-5 text-primary" />
-                      <CardTitle className="text-sm">{tipo.nombre}</CardTitle>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <CardDescription className="text-xs">{tipo.descripcion}</CardDescription>
-                    <Button variant="outline" size="sm" className="w-full mt-3">
-                      Generar
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center space-x-2">
+                    <BarChart3 className="h-5 w-5 text-primary" />
+                    <CardTitle className="text-sm">Total Productos</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  {/* Muestra el dato real o un esqueleto mientras carga */}
+                  <div className="text-2xl font-bold">{stats ? stats.totalProductos : "..."}</div>
+                  <CardDescription className="text-xs">Unidades registradas</CardDescription>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center space-x-2">
+                    <DollarSign className="h-5 w-5 text-primary" />
+                    <CardTitle className="text-sm">Valor del Inventario</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="text-2xl font-bold">
+                    {stats ? `$${stats.valorInventario.toLocaleString()}` : "$..."}
+                  </div>
+                  <CardDescription className="text-xs">Costo total del stock</CardDescription>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center space-x-2">
+                    <Truck className="h-5 w-5 text-primary" />
+                    <CardTitle className="text-sm">Total Proveedores</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="text-2xl font-bold">{stats ? stats.totalProveedores : "..."}</div>
+                  <CardDescription className="text-xs">Socios comerciales</CardDescription>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center space-x-2">
+                    <Clock className="h-5 w-5 text-primary" />
+                    <CardTitle className="text-sm">Órdenes Pendientes</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="text-2xl font-bold">{stats ? stats.ordenesPendientes : "..."}</div>
+                  <CardDescription className="text-xs">Esperando recepción</CardDescription>
+                </CardContent>
+              </Card>
             </div>
 
             {/* Recent Reports */}

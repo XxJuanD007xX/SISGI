@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"; 
 import { AppSidebar } from "@/app/components/app-sidebar"
 import { StatsCards, QuickActions, InventoryStatus, RecentActivity, AlertsPanel } from "@/app/components/dashboard-widgets"
 import {
@@ -16,6 +17,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Calendar, Clock } from "lucide-react"
 import { ThemeSwitcher } from "@/app/components/theme-switcher"
+import { Product } from "@/app/components/types";
 
 export default function Dashboard() {
   const currentDate = new Date().toLocaleDateString("es-ES", {
@@ -24,6 +26,26 @@ export default function Dashboard() {
     month: "long",
     day: "numeric",
   })
+
+  // Estado para guardar los productos con bajo stock
+  const [lowStockProducts, setLowStockProducts] = useState<Product[]>([]);
+
+  //useEffect para llamar a la API cuando el componente se cargue
+  useEffect(() => {
+    const fetchLowStockProducts = async () => {
+      try {
+        const response = await fetch("http://localhost:8080/api/products/stock-bajo");
+        if (response.ok) {
+          const data = await response.json();
+          setLowStockProducts(data);
+        }
+      } catch (error) {
+        console.error("Error al obtener productos con bajo stock:", error);
+      }
+    };
+
+    fetchLowStockProducts();
+  }, []); // El array vacío asegura que se ejecute solo una vez
 
   return (
     <div className="dark">
@@ -77,18 +99,20 @@ export default function Dashboard() {
             </div>
 
             {/* Stats Cards */}
-            <StatsCards />
+            <StatsCards lowStockCount={lowStockProducts.length} />
 
             {/* Main Grid */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+
+              {/* Alerts Panel */}
+              <AlertsPanel lowStockProducts={lowStockProducts} />
+
               {/* Quick Actions */}
               <QuickActions />
 
               {/* Inventory Status */}
               <InventoryStatus />
 
-              {/* Alerts Panel */}
-              <AlertsPanel />
             </div>
 
             {/* Bottom Section */}

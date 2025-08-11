@@ -1,3 +1,5 @@
+// src/app/components/orden-compra-drawer.tsx
+
 "use client"
 
 import React from "react"
@@ -6,7 +8,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
-import { ShoppingCart, Edit, Trash2, Calendar, DollarSign, User, Building, FileText } from "lucide-react"
+import { ShoppingCart, Edit, Trash2, Calendar, DollarSign, Building, FileText, Download, Package } from "lucide-react"
 import { toast } from "sonner"
 import { OrdenCompra } from "./types"
 import { OrdenCompraFormModal } from "./orden-compra-form-modal"
@@ -25,9 +27,32 @@ export function OrdenCompraDrawer({ orden, onSuccess }: OrdenDrawerProps) {
       toast.success("Orden eliminada correctamente")
       if (onSuccess) onSuccess()
     } catch (error) {
-      toast.error("Error al eliminar la orden")
+       toast.error("Error al eliminar la orden")
     }
-  }
+  };
+
+  const handleDownloadPdf = async () => {
+    try {
+      const response = await fetch(`http://localhost:8080/api/ordenes/${orden.id}/pdf`);
+      if (!response.ok) {
+        // Si el backend falla, esto se activa.
+        throw new Error("No se pudo generar el PDF.");
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `orden_compra_${orden.id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success("PDF descargado con éxito.");
+    } catch (error) {
+      console.error("Error al descargar el PDF:", error);
+      toast.error("No se pudo descargar el PDF.");
+    }
+  };
 
   return (
     <Sheet>
@@ -42,7 +67,8 @@ export function OrdenCompraDrawer({ orden, onSuccess }: OrdenDrawerProps) {
                 </div>
                 <div>
                     <SheetTitle className="text-2xl font-bold">Orden de Compra #{orden.id}</SheetTitle>
-                    <SheetDescription className="text-base">{orden.proveedor.nombreEmpresa}</SheetDescription>
+                    {/* === CORRECCIÓN 1 === */}
+                    <SheetDescription className="text-base">{orden.proveedor?.nombreEmpresa || 'Proveedor no asignado'}</SheetDescription>
                 </div>
             </div>
         </SheetHeader>
@@ -68,38 +94,64 @@ export function OrdenCompraDrawer({ orden, onSuccess }: OrdenDrawerProps) {
         <div className="space-y-3">
             <h4 className="font-semibold flex items-center gap-2"><Building className="h-4 w-4"/> Proveedor</h4>
             <div className="pl-6 text-sm text-muted-foreground">
-                <p>{orden.proveedor.nombreEmpresa}</p>
-                <p>{orden.proveedor.personaContacto}</p>
-                <p>{orden.proveedor.email}</p>
+                {/* === CORRECCIÓN 2 === */}
+                <p>{orden.proveedor?.nombreEmpresa || 'N/A'}</p>
+                <p>{orden.proveedor?.personaContacto || 'N/A'}</p>
+                <p>{orden.proveedor?.email || 'N/A'}</p>
             </div>
         </div>
         
-         <div className="space-y-3 mt-4">
+        <div className="space-y-3 mt-4">
             <h4 className="font-semibold flex items-center gap-2"><FileText className="h-4 w-4"/> Observaciones</h4>
             <p className="pl-6 text-sm text-muted-foreground italic">{orden.observaciones || "Sin observaciones."}</p>
         </div>
 
-        <SheetFooter className="mt-8">
-          <div className="flex w-full gap-2">
-            <OrdenCompraFormModal orden={orden} modoEdicion={true} onSuccess={onSuccess}>
-               <Button variant="outline" className="w-full"><Edit className="h-4 w-4 mr-2" /> Editar</Button>
-            </OrdenCompraFormModal>
+        {/* --- SECCIÓN PARA MOSTRAR DETALLES (TAMBIÉN PROTEGIDA) --- */}
+        <Separator className="my-4" />
+        <div className="space-y-3">
+            <h4 className="font-semibold flex items-center gap-2"><Package className="h-4 w-4"/> Productos Incluidos</h4>
+            <div className="pl-6 space-y-2">
+                {orden.detalles?.map(detalle => (
+                    <div key={detalle.id} className="flex justify-between items-center text-sm">
+                        <div>
+                            {/* === CORRECCIÓN 3 === */}
+                            <p className="font-medium">{detalle.producto?.nombre || 'Producto no encontrado'}</p>
+                            <p className="text-muted-foreground">{detalle.cantidad} x ${detalle.precioUnitario.toLocaleString()}</p>
+                        </div>
+                        <span className="font-semibold">${(detalle.cantidad * detalle.precioUnitario).toLocaleString()}</span>
+                    </div>
+                ))}
+                {(!orden.detalles || orden.detalles.length === 0) && (
+                    <p className="text-sm text-muted-foreground italic">Esta orden no tiene productos detallados.</p>
+                )}
+            </div>
+        </div>
 
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" className="w-full"><Trash2 className="h-4 w-4 mr-2" /> Eliminar</Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>¿Estás seguro de eliminar esta orden?</AlertDialogTitle>
-                  <AlertDialogDescription>Esta acción es permanente y no se puede deshacer.</AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete}>Confirmar</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+        <SheetFooter className="mt-8">
+          <div className="flex w-full flex-col gap-2">
+            <Button variant="outline" className="w-full" onClick={handleDownloadPdf}>
+              <Download className="h-4 w-4 mr-2" /> Exportar a PDF
+            </Button>
+            <div className="flex w-full gap-2">
+                <OrdenCompraFormModal orden={orden} modoEdicion={true} onSuccess={onSuccess}>
+                  <Button variant="outline" className="w-full"><Edit className="h-4 w-4 mr-2" /> Editar</Button>
+                </OrdenCompraFormModal>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" className="w-full"><Trash2 className="h-4 w-4 mr-2" /> Eliminar</Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>¿Estás seguro de eliminar esta orden?</AlertDialogTitle>
+                      <AlertDialogDescription>Esta acción es permanente y no se puede deshacer.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDelete}>Confirmar</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+            </div>
           </div>
         </SheetFooter>
       </SheetContent>

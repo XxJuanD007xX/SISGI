@@ -105,7 +105,7 @@ export default function OrdenesPage() {
                           <ShoppingCart className="h-5 w-5" />
                         </div>
                         <div>
-                          <p className="font-medium">Orden #{orden.id} - {orden.proveedor.nombreEmpresa}</p>
+                          <p className="font-medium">Orden #{orden.id} - {orden.proveedor?.nombreEmpresa || "Proveedor no asignado"}</p>
                           <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                             <Calendar className="h-3 w-3" />
                             <span>{orden.fechaOrden}</span>

@@ -3,6 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
+import { Product } from "./types";
 import {
   TrendingUp,
   TrendingDown,
@@ -16,7 +17,7 @@ import {
   Bell,
 } from "lucide-react"
 
-export function StatsCards() {
+export function StatsCards({ lowStockCount }: { lowStockCount: number }) {
   const stats = [
     {
       title: "Productos Totales",
@@ -36,8 +37,8 @@ export function StatsCards() {
     },
     {
       title: "Productos con Stock Bajo",
-      value: "8",
-      change: "-3",
+      value: lowStockCount.toString(),
+      change: `-${lowStockCount}`,
       trend: "down",
       icon: AlertTriangle,
       description: "requieren reabastecimiento",
@@ -216,7 +217,7 @@ export function RecentActivity() {
   )
 }
 
-export function AlertsPanel() {
+export function AlertsPanel({ lowStockProducts }: { lowStockProducts: Product[] }) {
   const alerts = [
     {
       title: "Stock Crítico",
@@ -248,30 +249,23 @@ export function AlertsPanel() {
         <CardDescription>Notificaciones importantes</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {alerts.map((alert, index) => (
-          <div key={index} className="flex items-start space-x-4 p-3 rounded-lg border">
-            <div
-              className={`p-1 rounded-full ${
-                alert.type === "error"
-                  ? "bg-red-100 dark:bg-red-900"
-                  : alert.type === "warning"
-                    ? "bg-yellow-100 dark:bg-yellow-900"
-                    : "bg-green-100 dark:bg-green-900"
-              }`}
-            >
-              {alert.type === "error" && <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />}
-              {alert.type === "warning" && <Clock className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />}
-              {alert.type === "success" && <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />}
+        {/* Alerta de Stock Crítico ahora es dinámica */}
+        {lowStockProducts.length > 0 && (
+          <div className="flex items-start space-x-4 p-3 rounded-lg border">
+            <div className="p-1 rounded-full bg-red-100 dark:bg-red-900">
+              <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
             </div>
             <div className="flex-1">
-              <h4 className="text-sm font-medium">{alert.title}</h4>
-              <p className="text-sm text-muted-foreground">{alert.message}</p>
-              <Button variant="link" size="sm" className="h-auto p-0 mt-1">
-                {alert.action}
+              <h4 className="text-sm font-medium">Stock Crítico</h4>
+              <p className="text-sm text-muted-foreground">
+                {lowStockProducts.length} producto(s) requieren reabastecimiento inmediato.
+              </p>
+              <Button variant="link" size="sm" className="h-auto p-0 mt-1" asChild>
+                <a href="/dashboard/productos">Ver Productos</a>
               </Button>
             </div>
           </div>
-        ))}
+        )}
       </CardContent>
     </Card>
   )

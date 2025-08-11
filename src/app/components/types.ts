@@ -34,12 +34,21 @@ export interface Proveedor {
   estado?: string;
 }
 
+// INTERFAZ PARA EL DETALLE DE LA ORDEN 
+export interface DetalleOrdenCompra {
+  id?: number;
+  producto: Product;
+  cantidad: number;
+  precioUnitario: number;
+}
+
 // INTERFAZ PARA ORDEN DE COMPRA
 export interface OrdenCompra {
-  id: number;
-  proveedor: Proveedor; 
+  id?: number;
+  proveedor?: Proveedor;
   fechaOrden: string;  
-  estado: string; // Ej: "Pendiente", "Recibido"
+  estado: string; 
   total: number;
   observaciones?: string; 
+  detalles: DetalleOrdenCompra[];
 }
