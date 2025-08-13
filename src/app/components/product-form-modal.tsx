@@ -30,8 +30,6 @@ interface ProductFormModalProps {
 export function ProductFormModal({ producto, modoEdicion, onSuccess, children }: ProductFormModalProps) {
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-
-  // --- ESTADO PARA ALMACENAR LOS PROVEEDORES ---
   const [listaProveedores, setListaProveedores] = useState<Proveedor[]>([])
 
   const [formData, setFormData] = useState(
@@ -49,7 +47,7 @@ export function ProductFormModal({ producto, modoEdicion, onSuccess, children }:
           proveedor: "",
           ubicacion: "",
         }
-  )
+  );
 
   // --- useEffect PARA CARGAR LOS PROVEEDORES CUANDO SE ABRE EL MODAL ---
   useEffect(() => {
@@ -143,7 +141,7 @@ export function ProductFormModal({ producto, modoEdicion, onSuccess, children }:
     }
   };
 
-  const isFormValid = formData.nombre && formData.categoria && formData.precio && formData.stock
+  const isFormValid = formData.nombre && formData.categoria && formData.precio && formData.stock;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -252,60 +250,21 @@ export function ProductFormModal({ producto, modoEdicion, onSuccess, children }:
             <div className="flex items-center gap-2 mb-3">
               <Hash className="h-4 w-4 text-primary" />
               <h3 className="font-semibold text-lg">Inventario y Precios</h3>
-            </div><br />
-
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="precio">
-                  <div className="flex items-center gap-1">
-                    <DollarSign className="h-3 w-3" />
-                    Precio *
-                  </div>
-                </Label>
-                <Input
-                  id="precio"
-                  type="number"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={formData.precio}
-                  onChange={(e) => handleInputChange("precio", e.target.value)}
-                  required
-                />
+                <Label htmlFor="precio">Precio *</Label>
+                <Input id="precio" type="number" step="0.01" placeholder="0.00" value={formData.precio} onChange={(e) => handleInputChange("precio", e.target.value)} required />
               </div>
-
               <div className="space-y-2">
-                <Label htmlFor="stock">
-                  <div className="flex items-center gap-1">
-                    Stock Actual *
-                  </div>
-                </Label>
-                <Input
-                  id="stock"
-                  type="number"
-                  placeholder="0"
-                  value={formData.stock}
-                  onChange={(e) => handleInputChange("stock", e.target.value)}
-                  required
-                />
+                <Label htmlFor="stock">Stock Actual *</Label>
+                <Input id="stock" type="number" placeholder="0" value={formData.stock} onChange={(e) => handleInputChange("stock", e.target.value)} required />
               </div>
-
               <div className="space-y-2">
-                <Label htmlFor="stockMinimo">
-                  <div className="flex items-center gap-1">
-                    Stock Mínimo
-                  </div>
-                </Label>
-                <Input
-                  id="stockMinimo"
-                  type="number"
-                  placeholder="5"
-                  value={formData.stockMinimo}
-                  onChange={(e) => handleInputChange("stockMinimo", e.target.value)}
-                />
+                <Label htmlFor="stockMinimo">Stock Mínimo</Label>
+                <Input id="stockMinimo" type="number" placeholder="5" value={formData.stockMinimo} onChange={(e) => handleInputChange("stockMinimo", e.target.value)} />
               </div>
-
             </div>
-            
           </div>
 
           {/* Información Adicional */}
@@ -352,7 +311,7 @@ export function ProductFormModal({ producto, modoEdicion, onSuccess, children }:
               <div className="flex flex-wrap gap-2">
                 <Badge variant="outline">{formData.nombre}</Badge>
                 <Badge variant="secondary">{formData.categoria}</Badge>
-                {formData.precio && <Badge variant="outline">${formData.precio}</Badge>}
+                {formData.precio && <Badge variant="outline">${formData.precio}</Badge>} {/* <-- Corregido */}
                 {formData.stock && <Badge variant="outline">Stock: {formData.stock}</Badge>}
               </div>
             </div>

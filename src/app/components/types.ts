@@ -52,3 +52,20 @@ export interface OrdenCompra {
   observaciones?: string; 
   detalles: DetalleOrdenCompra[];
 }
+
+// INTERFAZ PARA EL DETALLE DE LA VENTA
+export interface DetalleVenta {
+  id?: number;
+  producto: Product;
+  cantidad: number;
+  precioUnitario: number;
+}
+
+// INTERFAZ PARA LA VENTA
+export interface Venta {
+  id?: number;
+  fechaVenta: string;
+  cliente?: string;
+  total: number;
+  detalles: DetalleVenta[];
+}
