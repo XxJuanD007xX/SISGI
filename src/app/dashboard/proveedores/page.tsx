@@ -15,16 +15,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { Truck, Plus, Search, Building, Phone, Mail } from "lucide-react"
+import { Truck, Plus, Search, Building, Phone, Mail, CheckCircle, Clock, FileText } from "lucide-react"
 import { SupplierFormModal } from "../../components/supplier-form-modal"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge"; 
-import { Proveedor } from "@/app/components/types"
+import { Proveedor, Product } from "@/app/components/types"
 import { SupplierDrawer } from "../../components/supplier-drawer" 
+
+interface ProveedorStats {
+  totalProveedores: number;
+  proveedoresActivos: number;
+  ordenesPendientes: number;
+}
 
 export default function ProveedoresPage() {
 
   const [proveedores, setProveedores] = useState<Proveedor[]>([])
+  const [productos, setProductos] = useState<Product[]>([])
+  const [stats, setStats] = useState<ProveedorStats | null>(null);
   const [searchTerm, setSearchTerm] = useState("")
   const [filtroEstado, setFiltroEstado] = useState<string | null>(null)
 
@@ -39,16 +47,45 @@ export default function ProveedoresPage() {
     }
   }
 
+  // --- FUNCIÓN PARA OBTENER PRODUCTOS ---
+  const fetchProductos = async () => {
+    try {
+        const res = await fetch("http://localhost:8080/api/products");
+        if(res.ok) setProductos(await res.json());
+    } catch (error) {
+        console.error("Error fetching productos:", error);
+    }
+  }
+
+  // --- FUNCIÓN PARA OBTENER ESTADÍSTICAS ---
+  const fetchStats = async () => {
+    try {
+      const response = await fetch("http://localhost:8080/api/reportes/proveedores-stats");
+      if (response.ok) {
+        setStats(await response.json());
+      }
+    } catch (error) {
+      console.error("Error al obtener estadísticas de proveedores:", error);
+    }
+  };
+
   const proveedoresFiltrados = proveedores.filter(
     (p) =>
-      // --- ACTUALIZADO A CAMELCASE ---
-      p.nombreEmpresa.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.personaContacto.toLowerCase().includes(searchTerm.toLowerCase())
+      (p.nombreEmpresa.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.personaContacto.toLowerCase().includes(searchTerm.toLowerCase())) &&
+      (filtroEstado ? p.estado === filtroEstado : true)
   );
 
   useEffect(() => {
     fetchProveedores()
+    fetchProductos()
+    fetchStats();
   }, [])
+
+  // --- FUNCIÓN PARA CONTAR PRODUCTOS POR PROVEEDOR ---
+  const contarProductosPorProveedor = (nombreProveedor: string) => {
+    return productos.filter(p => p.proveedor === nombreProveedor).length;
+  }
 
   return (
     <div className="dark">
@@ -90,32 +127,40 @@ export default function ProveedoresPage() {
             {/* --- SECCIÓN DE ESTADÍSTICAS --- */}
             <div className="grid gap-4 md:grid-cols-3">
               <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Proveedores</CardTitle>
-                  <Building className="h-4 w-4 text-muted-foreground" />
+                <CardHeader className="pb-3">
+                  <div className="flex items-center space-x-2">
+                    <Building className="h-5 w-5 text-primary" />
+                    <CardTitle className="text-sm">Total Proveedores</CardTitle>
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{proveedores.length}</div>
-                  <p className="text-xs text-muted-foreground">+2 este mes</p>
+                  <div className="text-2xl font-bold">{stats ? stats.totalProveedores : "..."}</div>
+                  <p className="text-xs text-muted-foreground">Proveedores registrados</p>
                 </CardContent>
               </Card>
               <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Proveedores Activos</CardTitle>
-                  <Truck className="h-4 w-4 text-muted-foreground" />
+                <CardHeader className="pb-3">
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle className="h-5 w-5 text-primary" />
+                    <CardTitle className="text-sm">Proveedores Activos</CardTitle>
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">15</div> {/* Valor estático por ahora */}
-                  <p className="text-xs text-muted-foreground">83% del total</p>
+                  <div className="text-2xl font-bold">{stats ? stats.proveedoresActivos : "..."}</div>
+                   <p className="text-xs text-muted-foreground">
+                    {stats ? `${Math.round((stats.proveedoresActivos / stats.totalProveedores) * 100) || 0}% del total` : "Calculando..."}
+                   </p>
                 </CardContent>
               </Card>
               <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Órdenes Pendientes</CardTitle>
-                  <Phone className="h-4 w-4 text-muted-foreground" />
+                <CardHeader className="pb-3">
+                  <div className="flex items-center space-x-2">
+                    <Clock className="h-5 w-5 text-primary" />
+                    <CardTitle className="text-sm">Órdenes Pendientes</CardTitle>
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">7</div> {/* Valor estático por ahora */}
+                  <div className="text-2xl font-bold">{stats ? stats.ordenesPendientes : "..."}</div>
                   <p className="text-xs text-muted-foreground">Requieren seguimiento</p>
                 </CardContent>
               </Card>
@@ -151,7 +196,6 @@ export default function ProveedoresPage() {
                       <DropdownMenuItem onClick={() => setFiltroEstado("Inactivo")}>Inactivo</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
-                  <Button variant="outline">Región</Button> {/* Botón de Región como en tu diseño */}
 
                 </div>
 
@@ -181,13 +225,17 @@ export default function ProveedoresPage() {
                           </div>
                         </div>
                         <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-                           <div className="text-right">
-                                <p className="text-sm font-medium">45 productos</p> {/* Dato estático por ahora */}
-                                <Badge variant={proveedor.estado === "Activo" ? "default" : "secondary"}>
-                                  {proveedor.estado}
-                                </Badge>
-                            </div>
-                           <SupplierDrawer proveedor={proveedor} onSuccess={fetchProveedores} />
+                          <div className="text-right">
+                              {/* --- CONTEO DINÁMICO DE PRODUCTOS --- */}
+                              <p className="text-sm font-medium flex items-center justify-end gap-1">
+                                  {contarProductosPorProveedor(proveedor.nombreEmpresa)} productos
+                                  <FileText className="h-3 w-3" />
+                              </p>
+                              <Badge variant={proveedor.estado === "Activo" ? "default" : "secondary"}>
+                                {proveedor.estado}
+                              </Badge>
+                          </div>
+                          <SupplierDrawer proveedor={proveedor} onSuccess={() => { fetchProveedores(); fetchStats(); }} />
                         </div>
                       </div>
                     </div>

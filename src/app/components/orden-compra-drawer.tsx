@@ -8,10 +8,11 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
-import { ShoppingCart, Edit, Trash2, Calendar, DollarSign, Building, FileText, Download, Package } from "lucide-react"
+import { ShoppingCart, Edit, Trash2, Calendar, DollarSign, Building, FileText, Download, Package, Mail } from "lucide-react"
 import { toast } from "sonner"
 import { OrdenCompra } from "./types"
 import { OrdenCompraFormModal } from "./orden-compra-form-modal"
+import { EmailFormModal } from "./email-form-modal";
 
 interface OrdenDrawerProps {
   orden: OrdenCompra
@@ -129,9 +130,7 @@ export function OrdenCompraDrawer({ orden, onSuccess }: OrdenDrawerProps) {
 
         <SheetFooter className="mt-8">
           <div className="flex w-full flex-col gap-2">
-            <Button variant="outline" className="w-full" onClick={handleDownloadPdf}>
-              <Download className="h-4 w-4 mr-2" /> Exportar a PDF
-            </Button>
+            
             <div className="flex w-full gap-2">
                 <OrdenCompraFormModal orden={orden} modoEdicion={true} onSuccess={onSuccess}>
                   <Button variant="outline" className="w-full"><Edit className="h-4 w-4 mr-2" /> Editar</Button>
@@ -151,7 +150,18 @@ export function OrdenCompraDrawer({ orden, onSuccess }: OrdenDrawerProps) {
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
-            </div>
+            </div><br /><hr /><br />
+
+            <Button variant="outline" className="w-full" onClick={handleDownloadPdf}>
+              <Download className="h-4 w-4 mr-2" /> Exportar a PDF
+            </Button>
+
+            <EmailFormModal orden={orden}>
+                <Button variant="outline" className="w-full">
+                    <Mail className="h-4 w-4 mr-2" /> Enviar por Correo
+                </Button>
+            </EmailFormModal>
+            
           </div>
         </SheetFooter>
       </SheetContent>
