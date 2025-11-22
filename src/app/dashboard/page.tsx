@@ -1,8 +1,10 @@
 "use client"
 
-import { useEffect, useState } from "react"; 
+import { useEffect, useState } from "react";
 import { AppSidebar } from "@/app/components/app-sidebar"
 import { StatsCards, QuickActions, InventoryStatus, RecentActivity, AlertsPanel } from "@/app/components/dashboard-widgets"
+import { SalesChart } from "@/app/components/charts/sales-chart"
+import { CategoryChart } from "@/app/components/charts/category-chart"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -82,6 +84,7 @@ export default function Dashboard() {
 
           {/* Main Content */}
           <div className="flex flex-1 flex-col gap-4 p-4">
+
             {/* Welcome Section */}
             <div className="rounded-xl bg-muted/50 p-6">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between">
@@ -100,6 +103,18 @@ export default function Dashboard() {
 
             {/* Stats Cards */}
             <StatsCards lowStockCount={lowStockProducts.length} />
+
+            {/* --- NUEVA SECCIÓN DE GRÁFICOS --- */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+              {/* Gráfico de Ventas (Ocupa 4 columnas en pantallas grandes) */}
+              <div className="col-span-4">
+                <SalesChart />
+              </div>
+              {/* Gráfico de Categorías (Ocupa 3 columnas) */}
+              <div className="col-span-3">
+                <CategoryChart />
+              </div>
+            </div>
 
             {/* Main Grid */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

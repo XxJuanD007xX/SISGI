@@ -18,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Plus, Package, DollarSign, Hash, Tag, FileText } from "lucide-react"
 import { toast } from "sonner"
-import { Product, Proveedor } from "./types" 
+import { Product, Proveedor } from "./types"
 
 interface ProductFormModalProps {
   producto?: Product // opcional, para edición
@@ -36,17 +36,17 @@ export function ProductFormModal({ producto, modoEdicion, onSuccess, children }:
     producto
       ? { ...producto }
       : {
-          nombre: "",
-          descripcion: "",
-          categoria: "",
-          precio: "",
-          stock: "",
-          stockMinimo: "",
-          codigoBarras: "",
-          marca: "",
-          proveedor: "",
-          ubicacion: "",
-        }
+        nombre: "",
+        descripcion: "",
+        categoria: "",
+        precio: "",
+        stock: "",
+        stockMinimo: "",
+        codigoBarras: "",
+        marca: "",
+        proveedor: "",
+        ubicacion: "",
+      }
   );
 
   // --- useEffect PARA CARGAR LOS PROVEEDORES CUANDO SE ABRE EL MODAL ---
@@ -122,17 +122,17 @@ export function ProductFormModal({ producto, modoEdicion, onSuccess, children }:
     const method = modoEdicion ? 'PUT' : 'POST';
 
     try {
-        // La URL de tu API de Java que creamos
-        const response = await fetch(url, {
-          method: method,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData),
-        });
+      // La URL de tu API de Java que creamos
+      const response = await fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
 
-        if (!response.ok) throw new Error('Error al guardar el producto');
-        toast.success(`Producto ${modoEdicion ? 'actualizado' : 'guardado'} con éxito`);
-        setOpen(false);
-        if (onSuccess) onSuccess(); // ✅ Llama la función que recarga la lista de productos
+      if (!response.ok) throw new Error('Error al guardar el producto');
+      toast.success(`Producto ${modoEdicion ? 'actualizado' : 'guardado'} con éxito`);
+      setOpen(false);
+      if (onSuccess) onSuccess(); // ✅ Llama la función que recarga la lista de productos
 
     } catch (error) {
       toast.error(`Error al ${modoEdicion ? 'actualizar' : 'guardar'} el producto`);

@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from "react"
 import { usePathname } from "next/navigation"
 import {
-    BarChart3, Package, Users, Truck, Settings, Home, ShoppingCart,
-    FileText, Database, DollarSign
+  BarChart3, Package, Users, Truck, Settings, Home, ShoppingCart,
+  FileText, Database, DollarSign, Megaphone, Calendar
 } from "lucide-react"
 import { UserButton, useUser } from "@clerk/nextjs"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -30,6 +30,7 @@ const navGroups = [
     label: "Principal",
     items: [
       { title: "Dashboard", url: "/dashboard", icon: Home, paths: ["/dashboard"] },
+      { title: "Anuncios", url: "/dashboard/anuncios", icon: Megaphone, paths: ["/dashboard/anuncios"] },
     ]
   },
   {
@@ -52,6 +53,7 @@ const navGroups = [
     label: "Herramientas",
     items: [
       { title: "Documentos", url: "/dashboard/documentos", icon: FileText, paths: ["/dashboard/documentos"] },
+      { title: "Calendario", url: "/dashboard/calendario", icon: Calendar, paths: ["/dashboard/calendario"] },
       { title: "Configuración", url: "/dashboard/configuracion", icon: Settings, paths: ["/dashboard/configuracion"] },
     ]
   }
