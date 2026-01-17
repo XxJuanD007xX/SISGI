@@ -1,9 +1,6 @@
 package com.juan.sisgi.sisgi_backend.models;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.Data; // Importamos @Data de nuevo
 
 @Entity
@@ -23,5 +20,7 @@ public class Product {
     private String marca;
     private String codigoBarras;
     private String ubicacion;
-    private String proveedor;
+    @ManyToOne
+    @JoinColumn(name = "proveedor_id")
+    private Proveedor proveedor;
 }

@@ -83,8 +83,9 @@ export default function ProveedoresPage() {
   }, [])
 
   // --- FUNCIÓN PARA CONTAR PRODUCTOS POR PROVEEDOR ---
-  const contarProductosPorProveedor = (nombreProveedor: string) => {
-    return productos.filter(p => p.proveedor === nombreProveedor).length;
+  const contarProductosPorProveedor = (idProveedor?: number) => {
+    if (!idProveedor) return 0;
+    return productos.filter(p => p.proveedor?.id === idProveedor).length;
   }
 
   return (
@@ -228,7 +229,7 @@ export default function ProveedoresPage() {
                           <div className="text-right">
                               {/* --- CONTEO DINÁMICO DE PRODUCTOS --- */}
                               <p className="text-sm font-medium flex items-center justify-end gap-1">
-                                  {contarProductosPorProveedor(proveedor.nombreEmpresa)} productos
+                                  {contarProductosPorProveedor(proveedor.id)} productos
                                   <FileText className="h-3 w-3" />
                               </p>
                               <Badge variant={proveedor.estado === "Activo" ? "default" : "secondary"}>

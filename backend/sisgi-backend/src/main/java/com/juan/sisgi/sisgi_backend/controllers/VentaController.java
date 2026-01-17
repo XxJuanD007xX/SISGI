@@ -1,5 +1,8 @@
 package com.juan.sisgi.sisgi_backend.controllers;
 
+import com.juan.sisgi.sisgi_backend.dto.EntityMapper;
+import com.juan.sisgi.sisgi_backend.dto.VentaDTO;
+import com.juan.sisgi.sisgi_backend.exception.ResourceNotFoundException;
 import com.juan.sisgi.sisgi_backend.models.Product;
 import com.juan.sisgi.sisgi_backend.models.Venta;
 import com.juan.sisgi.sisgi_backend.repositories.ProductRepository;
@@ -10,11 +13,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/ventas")
-@CrossOrigin(origins = "http://localhost:3000")
 public class VentaController {
 
     @Autowired
@@ -23,24 +25,37 @@ public class VentaController {
     @Autowired
     private ProductRepository productRepository;
 
-    // Endpoint para OBTENER todas las ventas
+    @Autowired
+    private EntityMapper entityMapper;
+
     @GetMapping
-    public List<Venta> getAllVentas() {
-        return ventaRepository.findAll();
+    public List<VentaDTO> getAllVentas() {
+        return ventaRepository.findAll().stream()
+                .map(entityMapper::toDTO)
+                .collect(Collectors.toList());
     }
 
-    // Endpoint para CREAR una nueva venta y ACTUALIZAR el stock
     @PostMapping
     @Transactional
-    public ResponseEntity<Venta> createVenta(@RequestBody Venta venta) {
-        venta.getDetalles().forEach(detalle -> detalle.setVenta(venta));
+    public ResponseEntity<VentaDTO> createVenta(@RequestBody VentaDTO ventaDTO) {
+        Venta venta = entityMapper.toEntity(ventaDTO);
+
+        // El mapper ya debería haber vinculado los detalles a la venta,
+        // pero por si acaso o si se quiere asegurar la consistencia:
+        if (venta.getDetalles() != null) {
+            venta.getDetalles().forEach(detalle -> detalle.setVenta(venta));
+        }
 
         for (var detalle : venta.getDetalles()) {
             Product producto = productRepository.findById(detalle.getProducto().getId())
-                    .orElseThrow(() -> new RuntimeException("Producto no encontrado: " + detalle.getProducto().getId()));
+                    .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado: " + detalle.getProducto().getId()));
 
             if (producto.getStock() < detalle.getCantidad()) {
-                return ResponseEntity.badRequest().header("X-Error-Message", "Stock insuficiente para el producto: " + producto.getNombre()).build();
+                // Podríamos lanzar una excepción personalizada aquí, pero por ahora mantenemos el Header de error
+                // para compatibilidad con el frontend si este lo lee.
+                return ResponseEntity.badRequest()
+                        .header("X-Error-Message", "Stock insuficiente para el producto: " + producto.getNombre())
+                        .build();
             }
 
             producto.setStock(producto.getStock() - detalle.getCantidad());
@@ -48,36 +63,52 @@ public class VentaController {
         }
 
         Venta savedVenta = ventaRepository.save(venta);
-        return ResponseEntity.ok(savedVenta);
+        return ResponseEntity.ok(entityMapper.toDTO(savedVenta));
     }
 
-    // --- MÉTODO CORREGIDO ---
     @DeleteMapping("/{id}")
     @Transactional
     public ResponseEntity<Void> deleteVenta(@PathVariable Long id) {
-        // 1. Buscamos la venta por su ID
-        Optional<Venta> ventaOptional = ventaRepository.findById(id);
+        Venta venta = ventaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Venta no encontrada con id: " + id));
 
-        // 2. Verificamos si la venta existe
-        if (ventaOptional.isEmpty()) {
-            return ResponseEntity.notFound().build(); // Si no existe, devolvemos 404
+        // Si la venta no estaba anulada, devolvemos el stock antes de borrar (opcional, depende de la política)
+        if (!"ANULADA".equals(venta.getEstado())) {
+            for (var detalle : venta.getDetalles()) {
+                Product producto = productRepository.findById(detalle.getProducto().getId()).orElse(null);
+                if (producto != null) {
+                    producto.setStock(producto.getStock() + detalle.getCantidad());
+                    productRepository.save(producto);
+                }
+            }
         }
 
-        // 3. Si existe, procedemos a anularla
-        Venta venta = ventaOptional.get();
+        ventaRepository.delete(venta);
+        return ResponseEntity.noContent().build();
+    }
 
-        // 4. Devolvemos el stock al inventario
+    @PutMapping("/{id}/anular")
+    @Transactional
+    public ResponseEntity<VentaDTO> anularVenta(@PathVariable Long id, @RequestBody java.util.Map<String, String> body) {
+        Venta venta = ventaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Venta no encontrada con id: " + id));
+
+        if ("ANULADA".equals(venta.getEstado())) {
+            throw new RuntimeException("La venta ya se encuentra anulada.");
+        }
+
+        venta.setEstado("ANULADA");
+        venta.setMotivoAnulacion(body.getOrDefault("motivo", "Anulación de venta"));
+
         for (var detalle : venta.getDetalles()) {
-            Product producto = detalle.getProducto();
+            Product producto = productRepository.findById(detalle.getProducto().getId()).orElse(null);
             if (producto != null) {
                 producto.setStock(producto.getStock() + detalle.getCantidad());
                 productRepository.save(producto);
             }
         }
 
-        // 5. Finalmente, eliminamos la venta
-        ventaRepository.delete(venta);
-
-        return ResponseEntity.noContent().build();
+        Venta savedVenta = ventaRepository.save(venta);
+        return ResponseEntity.ok(entityMapper.toDTO(savedVenta));
     }
 }

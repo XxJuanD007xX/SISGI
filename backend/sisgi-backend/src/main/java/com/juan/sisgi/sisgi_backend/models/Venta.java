@@ -27,6 +27,12 @@ public class Venta {
     @Column(name = "total", nullable = false)
     private double total;
 
+    @Column(name = "estado")
+    private String estado = "COMPLETADA"; // COMPLETADA, ANULADA
+
+    @Column(name = "motivo_anulacion")
+    private String motivoAnulacion;
+
     @OneToMany(mappedBy = "venta", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
     private List<DetalleVenta> detalles = new ArrayList<>();

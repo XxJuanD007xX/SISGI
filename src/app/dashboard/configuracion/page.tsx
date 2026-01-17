@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { AppSidebar } from "@/app/components/app-sidebar"
 import {
   Breadcrumb,
@@ -15,10 +16,64 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { useTheme } from "@/app/components/theme-provider"
-import { Palette, Check, Settings, Moon, Bell, Shield, Database } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Palette, Check, Settings, Moon, Bell, Shield, Database, Building, Save, Globe, Phone, Mail, MapPin } from "lucide-react"
+import { toast } from "sonner"
 
 export default function ConfiguracionPage() {
   const { theme, setTheme } = useTheme()
+  const [isLoading, setIsLoading] = useState(false)
+  const [configData, setConfigData] = useState({
+    nombreEmpresa: "",
+    nit: "",
+    direccion: "",
+    telefono: "",
+    email: "",
+    sitioWeb: "",
+    moneda: "COP"
+  })
+
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const response = await fetch("http://localhost:8080/api/configuracion")
+        if (response.ok) {
+          const data = await response.json()
+          if (data.id) setConfigData(data)
+        }
+      } catch (error) {
+        console.error("Error al cargar configuración:", error)
+      }
+    }
+    fetchConfig()
+  }, [])
+
+  const handleSaveConfig = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+    try {
+      const response = await fetch("http://localhost:8080/api/configuracion", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(configData)
+      })
+      if (response.ok) {
+        toast.success("Configuración guardada correctamente")
+      } else {
+        toast.error("Error al guardar la configuración")
+      }
+    } catch (error) {
+      toast.error("Error de conexión con el servidor")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setConfigData(prev => ({ ...prev, [name]: value }))
+  }
 
   const colorThemes = [
     {
@@ -103,7 +158,7 @@ export default function ConfiguracionPage() {
       <SidebarProvider>
         <AppSidebar />
         <SidebarInset>
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 sticky top-0 bg-background/80 backdrop-blur-md z-10">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
             <Breadcrumb>
@@ -119,129 +174,221 @@ export default function ConfiguracionPage() {
             </Breadcrumb>
           </header>
 
-          <div className="flex flex-1 flex-col gap-4 p-4">
+          <div className="flex flex-1 flex-col gap-6 p-4 lg:p-6 max-w-6xl mx-auto w-full">
             {/* Header Section */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
                 <h1 className="text-3xl font-bold tracking-tight">Configuración del Sistema</h1>
-                <p className="text-muted-foreground">Personaliza la apariencia y configuración de SISGI</p>
+                <p className="text-muted-foreground">Personaliza la apariencia y los datos corporativos de SISGI</p>
               </div>
-              <Badge variant="outline" className="w-fit">
-                <Settings className="w-4 h-4 mr-2" />
-                Configuración Avanzada
+              <Badge variant="outline" className="w-fit py-1.5 px-3">
+                <Settings className="w-4 h-4 mr-2 text-primary" />
+                Panel de Control
               </Badge>
             </div>
 
-            {/* Theme Selector */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Palette className="h-5 w-5" />
-                  Paleta de Colores
-                </CardTitle>
-                <CardDescription>
-                  Selecciona una paleta de colores para personalizar la apariencia del dashboard
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {colorThemes.map((colorTheme) => (
-                    <div
-                      key={colorTheme.name}
-                      className={`relative cursor-pointer rounded-lg border-2 p-4 transition-all hover:shadow-md ${
-                        theme === colorTheme.name ? "border-primary ring-2 ring-primary/20" : "border-border"
-                      }`}
-                      onClick={() => setTheme(colorTheme.name as any)}
-                    >
-                      {theme === colorTheme.name && (
-                        <div className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary">
-                          <Check className="h-3 w-3 text-primary-foreground" />
-                        </div>
-                      )}
-                      <div className="space-y-3">
-                        <div className="flex h-8 w-full items-center space-x-1 overflow-hidden rounded-md border">
-                          {colorTheme.palette.map((color, index) => (
-                            <div
-                              key={index}
-                              className="h-full w-full"
-                              style={{ backgroundColor: color }}
-                            />
-                          ))}
-                        </div>
-                        <div>
-                          <h3 className="font-medium">{colorTheme.label}</h3>
-                          <p className="text-sm text-muted-foreground">{colorTheme.description}</p>
+            <div className="grid gap-6">
+              {/* Datos de la Empresa */}
+              <Card className="border-2 border-primary/10 shadow-lg">
+                <CardHeader className="bg-primary/5 border-b pb-4">
+                  <CardTitle className="flex items-center gap-2">
+                    <Building className="h-5 w-5 text-primary" />
+                    Datos de la Empresa
+                  </CardTitle>
+                  <CardDescription>
+                    Esta información aparecerá en los reportes PDF, órdenes de compra y facturación.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  <form onSubmit={handleSaveConfig} className="grid gap-6 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="nombreEmpresa" className="flex items-center gap-2">
+                        <Building className="h-3.5 w-3.5 text-muted-foreground" /> Nombre Comercial
+                      </Label>
+                      <Input
+                        id="nombreEmpresa"
+                        name="nombreEmpresa"
+                        placeholder="Ej: Variedades Dipal"
+                        value={configData.nombreEmpresa}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="nit" className="flex items-center gap-2">
+                         <Shield className="h-3.5 w-3.5 text-muted-foreground" /> NIT / Identificación
+                      </Label>
+                      <Input
+                        id="nit"
+                        name="nit"
+                        placeholder="Ej: 123.456.789-0"
+                        value={configData.nit}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="direccion" className="flex items-center gap-2">
+                        <MapPin className="h-3.5 w-3.5 text-muted-foreground" /> Dirección Física
+                      </Label>
+                      <Input
+                        id="direccion"
+                        name="direccion"
+                        placeholder="Ej: Calle 10 #15-20, Bogotá"
+                        value={configData.direccion}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="telefono" className="flex items-center gap-2">
+                        <Phone className="h-3.5 w-3.5 text-muted-foreground" /> Teléfono de Contacto
+                      </Label>
+                      <Input
+                        id="telefono"
+                        name="telefono"
+                        placeholder="Ej: +57 300 123 4567"
+                        value={configData.telefono}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="email" className="flex items-center gap-2">
+                        <Mail className="h-3.5 w-3.5 text-muted-foreground" /> Correo Electrónico
+                      </Label>
+                      <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        placeholder="Ej: contacto@dipal.com"
+                        value={configData.email}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="sitioWeb" className="flex items-center gap-2">
+                        <Globe className="h-3.5 w-3.5 text-muted-foreground" /> Sitio Web
+                      </Label>
+                      <Input
+                        id="sitioWeb"
+                        name="sitioWeb"
+                        placeholder="Ej: www.variedadesdipal.com"
+                        value={configData.sitioWeb}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                    <div className="md:col-span-2 flex justify-end pt-2">
+                      <Button type="submit" className="px-8" disabled={isLoading}>
+                        <Save className="h-4 w-4 mr-2" />
+                        {isLoading ? "Guardando..." : "Guardar Información Corporativa"}
+                      </Button>
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
+
+              {/* Theme Selector */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Palette className="h-5 w-5 text-primary" />
+                    Personalización Visual
+                  </CardTitle>
+                  <CardDescription>
+                    Selecciona una paleta de colores para el dashboard. Todos los temas están optimizados para modo oscuro.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {colorThemes.map((colorTheme) => (
+                      <div
+                        key={colorTheme.name}
+                        className={`relative cursor-pointer rounded-xl border-2 p-4 transition-all hover:shadow-md ${
+                          theme === colorTheme.name ? "border-primary bg-primary/5 ring-4 ring-primary/10" : "border-border hover:border-muted-foreground/30"
+                        }`}
+                        onClick={() => setTheme(colorTheme.name as any)}
+                      >
+                        {theme === colorTheme.name && (
+                          <div className="absolute top-3 right-3 flex h-6 w-6 items-center justify-center rounded-full bg-primary shadow-sm">
+                            <Check className="h-3.5 w-3.5 text-primary-foreground" />
+                          </div>
+                        )}
+                        <div className="space-y-3">
+                          <div className="flex h-10 w-full items-center space-x-1 overflow-hidden rounded-lg border shadow-inner bg-background/50">
+                            {colorTheme.palette.map((color, index) => (
+                              <div
+                                key={index}
+                                className="h-full w-full"
+                                style={{ backgroundColor: color }}
+                              />
+                            ))}
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-sm">{colorTheme.label}</h3>
+                            <p className="text-[11px] text-muted-foreground leading-tight mt-1">{colorTheme.description}</p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-6 p-4 bg-muted/50 rounded-lg">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Moon className="h-4 w-4" />
-                    <span className="font-medium">Modo Oscuro Activo</span>
+                    ))}
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Todas las paletas están optimizadas para el modo oscuro
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
 
-            {/* Other Settings */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {configuraciones.map((config, index) => (
-                <Card key={index}>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <config.icono className="h-5 w-5" />
-                      {config.titulo}
-                    </CardTitle>
-                    <CardDescription>{config.descripcion}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      {config.opciones.map((opcion, idx) => (
-                        <div key={idx} className="flex items-center justify-between p-2 rounded border">
-                          <span className="text-sm">{opcion}</span>
-                          <Button variant="outline" size="sm">
-                            Configurar
-                          </Button>
-                        </div>
-                      ))}
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {configuraciones.map((config, index) => (
+                  <Card key={index} className="hover:shadow-md transition-shadow">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <config.icono className="h-5 w-5 text-primary" />
+                        {config.titulo}
+                      </CardTitle>
+                      <CardDescription className="text-xs">{config.descripcion}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        {config.opciones.map((opcion, idx) => (
+                          <div key={idx} className="flex items-center justify-between p-2.5 rounded-lg border bg-muted/30 hover:bg-muted/50 transition-colors">
+                            <span className="text-sm font-medium">{opcion}</span>
+                            <Button variant="ghost" size="sm" className="h-8 text-xs hover:bg-primary/10 hover:text-primary">
+                              Gestionar
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {/* System Info */}
+              <Card className="bg-muted/20 border-dashed">
+                <CardHeader>
+                  <CardTitle className="text-sm font-bold flex items-center gap-2">
+                    <Settings className="h-4 w-4" /> Estado del Servidor
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="p-3 rounded-lg bg-background border shadow-sm">
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Versión SISGI</p>
+                      <p className="text-sm font-mono mt-1">v2.1.0-stable</p>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    <div className="p-3 rounded-lg bg-background border shadow-sm">
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Base de Datos</p>
+                      <p className="text-sm mt-1">H2 In-Memory (Dev)</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-background border shadow-sm">
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">API Status</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
+                        <span className="text-sm text-green-500 font-medium">Operacional</span>
+                      </div>
+                    </div>
+                    <div className="p-3 rounded-lg bg-background border shadow-sm">
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Ambiente</p>
+                      <p className="text-sm mt-1">Desarrollo / Portafolio</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
-
-            {/* System Info */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Información del Sistema</CardTitle>
-                <CardDescription>Detalles técnicos y estado del sistema</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">Versión SISGI</p>
-                    <p className="text-sm text-muted-foreground">v2.1.0</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">Base de Datos</p>
-                    <p className="text-sm text-muted-foreground">PostgreSQL 15.2</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">Último Backup</p>
-                    <p className="text-sm text-muted-foreground">Hace 2 horas</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">Uptime</p>
-                    <p className="text-sm text-muted-foreground">15 días, 4 horas</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </SidebarInset>
       </SidebarProvider>

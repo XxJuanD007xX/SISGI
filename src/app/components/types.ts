@@ -9,7 +9,7 @@ export interface Product {
   stockMinimo?: number
   marca?: string
   codigoBarras?: string
-  proveedor?: string
+  proveedor?: Proveedor
   ubicacion?: string
 }
 
@@ -67,5 +67,7 @@ export interface Venta {
   fechaVenta: string;
   cliente?: string;
   total: number;
+  estado?: string;
+  motivoAnulacion?: string;
   detalles: DetalleVenta[];
 }

@@ -111,7 +111,7 @@ export function ProductDrawer({ producto, onSuccess }: { producto: Product, onSu
             <h3 className="font-semibold text-lg">Información Adicional</h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div><span className="font-semibold">Proveedor:</span> {producto.proveedor || <span className="text-muted-foreground">N/A</span>}</div>
+            <div><span className="font-semibold">Proveedor:</span> {producto.proveedor?.nombreEmpresa || <span className="text-muted-foreground">N/A</span>}</div>
             <div><span className="font-semibold">Ubicación:</span> {producto.ubicacion || <span className="text-muted-foreground">N/A</span>}</div>
           </div>
         </div>
