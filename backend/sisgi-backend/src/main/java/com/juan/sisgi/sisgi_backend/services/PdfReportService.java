@@ -1,7 +1,9 @@
 package com.juan.sisgi.sisgi_backend.services;
 
+import com.juan.sisgi.sisgi_backend.models.Configuracion;
 import com.juan.sisgi.sisgi_backend.models.Product;
 import com.juan.sisgi.sisgi_backend.models.Venta;
+import com.juan.sisgi.sisgi_backend.repositories.ConfiguracionRepository;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
@@ -20,6 +22,9 @@ import java.util.List;
 
 @Service
 public class PdfReportService {
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private ConfiguracionRepository configuracionRepository;
 
     // --- CONFIGURACIÓN DE ESTILO ---
     private final Color PRIMARY_COLOR = new Color(33, 37, 41); // Gris Oscuro (Casi negro)
@@ -404,7 +409,10 @@ public class PdfReportService {
         cs.setNonStrokingColor(Color.GRAY);
         cs.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 9);
         
-        String footerText = "SISGI - Sistema de Gestión de Inventarios | Página " + pageNum;
+        Configuracion config = configuracionRepository.findFirstByOrderByIdAsc().orElse(new Configuracion());
+        String empresa = config.getNombreEmpresa() != null ? config.getNombreEmpresa() : "Variedades Dipal";
+
+        String footerText = "SISGI | " + empresa + " | Página " + pageNum;
         float textWidth = new PDType1Font(Standard14Fonts.FontName.HELVETICA).getStringWidth(footerText) / 1000 * 9;
         
         cs.beginText();

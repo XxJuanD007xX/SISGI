@@ -32,7 +32,7 @@ export function ProductFormModal({ producto, modoEdicion, onSuccess, children }:
   const [isLoading, setIsLoading] = useState(false)
   const [listaProveedores, setListaProveedores] = useState<Proveedor[]>([])
 
-  const [formData, setFormData] = useState(
+  const [formData, setFormData] = useState<any>(
     producto
       ? { ...producto }
       : {
@@ -44,12 +44,11 @@ export function ProductFormModal({ producto, modoEdicion, onSuccess, children }:
         stockMinimo: "",
         codigoBarras: "",
         marca: "",
-        proveedor: "",
+        proveedor: null,
         ubicacion: "",
       }
   );
 
-  // --- useEffect PARA CARGAR LOS PROVEEDORES CUANDO SE ABRE EL MODAL ---
   useEffect(() => {
     if (open) {
       const fetchProveedores = async () => {
@@ -66,7 +65,7 @@ export function ProductFormModal({ producto, modoEdicion, onSuccess, children }:
       }
       fetchProveedores()
     }
-  }, [open]) // Se ejecuta cada vez que el valor de 'open' cambia
+  }, [open])
 
   const categorias = [
     "Electrónicos",
@@ -81,40 +80,16 @@ export function ProductFormModal({ producto, modoEdicion, onSuccess, children }:
     "Otros",
   ]
 
-  const proveedores = [
-    "Distribuidora Tech",
-    "Textiles del Norte",
-    "Hogar y Decoración",
-    "Deportes Extremos",
-    "Belleza Total",
-    "Librería Central",
-  ]
-
-  interface ProductFormData {
-    nombre: string
-    descripcion: string
-    categoria: string
-    precio: string
-    stock: string
-    stockMinimo: string
-    codigoBarras: string
-    marca: string
-    proveedor: string
-    ubicacion: string
+  const handleInputChange = (field: string, value: any) => {
+    setFormData((prev: any) => ({ ...prev, [field]: value }))
   }
 
-  const handleInputChange = (field: keyof typeof formData, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
+  const handleProveedorChange = (id: string) => {
+    const selected = listaProveedores.find(p => p.id?.toString() === id);
+    setFormData((prev: any) => ({ ...prev, proveedor: selected }));
   }
-
-  // =============================================================================================================
-  // ------------------------------------------- FETCH AL BACKEND -------------------------------------------
-  // =============================================================================================================
-
-  // Esta función se encarga de enviar los datos del formulario al backend
 
   const handleSubmit = async (e: React.FormEvent) => {
-
     e.preventDefault();
     setIsLoading(true);
 
@@ -122,7 +97,6 @@ export function ProductFormModal({ producto, modoEdicion, onSuccess, children }:
     const method = modoEdicion ? 'PUT' : 'POST';
 
     try {
-      // La URL de tu API de Java que creamos
       const response = await fetch(url, {
         method: method,
         headers: { 'Content-Type': 'application/json' },
@@ -132,7 +106,7 @@ export function ProductFormModal({ producto, modoEdicion, onSuccess, children }:
       if (!response.ok) throw new Error('Error al guardar el producto');
       toast.success(`Producto ${modoEdicion ? 'actualizado' : 'guardado'} con éxito`);
       setOpen(false);
-      if (onSuccess) onSuccess(); // ✅ Llama la función que recarga la lista de productos
+      if (onSuccess) onSuccess();
 
     } catch (error) {
       toast.error(`Error al ${modoEdicion ? 'actualizar' : 'guardar'} el producto`);
@@ -175,7 +149,6 @@ export function ProductFormModal({ producto, modoEdicion, onSuccess, children }:
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Información Básica */}
           <div className="rounded-lg border bg-muted/50 p-4 mb-6 shadow-sm">
             <div className="flex items-center gap-2 mb-3">
               <Tag className="h-4 w-4 text-primary" />
@@ -245,7 +218,6 @@ export function ProductFormModal({ producto, modoEdicion, onSuccess, children }:
             </div>
           </div>
 
-          {/* Información de Inventario */}
           <div className="rounded-lg border bg-muted/50 p-4 mb-6 shadow-sm">
             <div className="flex items-center gap-2 mb-3">
               <Hash className="h-4 w-4 text-primary" />
@@ -267,7 +239,6 @@ export function ProductFormModal({ producto, modoEdicion, onSuccess, children }:
             </div>
           </div>
 
-          {/* Información Adicional */}
           <div className="rounded-lg border bg-muted/50 p-4 mb-6 shadow-sm">
             <div className="flex items-center gap-2 mb-3">
               <FileText className="h-4 w-4 text-primary" />
@@ -277,14 +248,16 @@ export function ProductFormModal({ producto, modoEdicion, onSuccess, children }:
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="proveedor">Proveedor</Label>
-                {/* --- SELECT DINÁMICO --- */}
-                <Select value={formData.proveedor} onValueChange={(value) => handleInputChange("proveedor", value)}>
+                <Select
+                  value={formData.proveedor?.id?.toString() || ""}
+                  onValueChange={handleProveedorChange}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecciona un proveedor" />
                   </SelectTrigger>
                   <SelectContent>
                     {listaProveedores.map((prov) => (
-                      <SelectItem key={prov.id} value={prov.nombreEmpresa}>
+                      <SelectItem key={prov.id} value={prov.id?.toString() || ""}>
                         {prov.nombreEmpresa}
                       </SelectItem>
                     ))}
@@ -304,14 +277,13 @@ export function ProductFormModal({ producto, modoEdicion, onSuccess, children }:
             </div>
           </div><hr />
 
-          {/* Preview */}
           {isFormValid && (
             <div className="p-4 bg-muted/50 rounded-lg">
               <h4 className="font-medium mb-2">Vista Previa</h4>
               <div className="flex flex-wrap gap-2">
                 <Badge variant="outline">{formData.nombre}</Badge>
                 <Badge variant="secondary">{formData.categoria}</Badge>
-                {formData.precio && <Badge variant="outline">${formData.precio}</Badge>} {/* <-- Corregido */}
+                {formData.precio && <Badge variant="outline">${Number(formData.precio).toLocaleString()}</Badge>}
                 {formData.stock && <Badge variant="outline">Stock: {formData.stock}</Badge>}
               </div>
             </div>

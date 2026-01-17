@@ -1,8 +1,10 @@
 package com.juan.sisgi.sisgi_backend.services;
 
+import com.juan.sisgi.sisgi_backend.models.Configuracion;
 import com.juan.sisgi.sisgi_backend.models.DetalleOrdenCompra;
 import com.juan.sisgi.sisgi_backend.models.OrdenCompra;
 import com.juan.sisgi.sisgi_backend.models.Proveedor;
+import com.juan.sisgi.sisgi_backend.repositories.ConfiguracionRepository;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
@@ -22,6 +24,9 @@ import java.util.Locale;
 
 @Service
 public class PdfService {
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private ConfiguracionRepository configuracionRepository;
 
     // --- NUEVA PALETA DE COLORES SUAVE ---
     private static final Color COLOR_PRIMARY = new Color(225, 29, 72);
@@ -90,6 +95,12 @@ public class PdfService {
     private void drawAddresseeInfo(PDPageContentStream cs, float y, Proveedor proveedor) throws IOException {
         float secondColumnX = 320;
         
+        Configuracion config = configuracionRepository.findFirstByOrderByIdAsc().orElse(new Configuracion());
+        if (config.getNombreEmpresa() == null) config.setNombreEmpresa("Variedades Dipal");
+        if (config.getNit() == null) config.setNit("123.456.789-0");
+        if (config.getDireccion() == null) config.setDireccion("Calle Falsa 123, Bodega 5");
+        if (config.getTelefono() == null) config.setTelefono("555-0123");
+
         // Información del Proveedor
         writeText(cs, FONT_BOLD, 10, MARGIN, y, "PROVEEDOR");
         cs.setStrokingColor(Color.LIGHT_GRAY);
@@ -102,10 +113,10 @@ public class PdfService {
         // Información de Envío
         writeText(cs, FONT_BOLD, 10, secondColumnX, y, "ENVIAR A");
         cs.moveTo(secondColumnX, y - 5); cs.lineTo(secondColumnX + 235, y - 5); cs.stroke();
-        writeText(cs, FONT_BOLD, 10, secondColumnX, y - 20, "Variedades Dipal");
-        writeText(cs, FONT_NORMAL, 9, secondColumnX, y - 35, "Calle Falsa 123, Bodega 5");
-        writeText(cs, FONT_NORMAL, 9, secondColumnX, y - 50, "Funza, Cundinamarca, Colombia");
-        writeText(cs, FONT_NORMAL, 9, secondColumnX, y - 65, "NIT: 123.456.789-0");
+        writeText(cs, FONT_BOLD, 10, secondColumnX, y - 20, config.getNombreEmpresa());
+        writeText(cs, FONT_NORMAL, 9, secondColumnX, y - 35, config.getDireccion());
+        writeText(cs, FONT_NORMAL, 9, secondColumnX, y - 50, "Tel: " + config.getTelefono());
+        writeText(cs, FONT_NORMAL, 9, secondColumnX, y - 65, "NIT: " + config.getNit());
     }
 
     private float drawTable(PDPageContentStream cs, float y, OrdenCompra orden) throws IOException {
@@ -160,7 +171,10 @@ public class PdfService {
     }
 
     private void drawFooter(PDPageContentStream cs, PDPage page) throws IOException {
-        String footerText = "Documento generado por SISGI | Variedades Dipal | " + LocalDate.now().getYear();
+        Configuracion config = configuracionRepository.findFirstByOrderByIdAsc().orElse(new Configuracion());
+        String empresa = config.getNombreEmpresa() != null ? config.getNombreEmpresa() : "Variedades Dipal";
+
+        String footerText = "Documento generado por SISGI | " + empresa + " | " + LocalDate.now().getYear();
         float textWidth = getTextWidth(FONT_NORMAL, 8, footerText);
         float centerX = (page.getMediaBox().getWidth() - textWidth) / 2;
         writeText(cs, FONT_NORMAL, 8, centerX, 30, footerText);

@@ -1,68 +1,73 @@
 package com.juan.sisgi.sisgi_backend.controllers;
 
+import com.juan.sisgi.sisgi_backend.dto.EntityMapper;
+import com.juan.sisgi.sisgi_backend.dto.ProductDTO;
+import com.juan.sisgi.sisgi_backend.exception.ResourceNotFoundException;
 import com.juan.sisgi.sisgi_backend.models.Product;
 import com.juan.sisgi.sisgi_backend.repositories.ProductRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/products")
-// Ya no necesitas @CrossOrigin aquí si usaste la clase WebConfig global
 public class ProductController {
 
     @Autowired
     private ProductRepository productRepository;
 
-    // Endpoint para OBTENER todos los productos (GET /api/products)
+    @Autowired
+    private EntityMapper entityMapper;
+
     @GetMapping
-    public List<Product> getAllProducts() {
-        return productRepository.findAll();
+    public List<ProductDTO> getAllProducts() {
+        return productRepository.findAll().stream()
+                .map(entityMapper::toDTO)
+                .collect(Collectors.toList());
     }
 
-    // Endpoint para CREAR un nuevo producto (POST /api/products)
     @PostMapping
-    public Product createProduct(@RequestBody Product product) {
-        return productRepository.save(product);
+    public ProductDTO createProduct(@RequestBody ProductDTO productDTO) {
+        Product product = entityMapper.toEntity(productDTO);
+        return entityMapper.toDTO(productRepository.save(product));
     }
-    
-    // Endpoint para ELIMINAR un producto (DELETE /api/products/{id})
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
-        if (productRepository.existsById(id)) {
-            productRepository.deleteById(id);
-            return ResponseEntity.noContent().build(); // 204 No Content
-        } else {
-            return ResponseEntity.notFound().build(); // 404 Not Found
-        }
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado con id: " + id));
+        productRepository.delete(product);
+        return ResponseEntity.noContent().build();
     }
-    
-    // Endpoint para ACTUALIZAR un producto (PUT /api/products/{id})
+
     @PutMapping("/{id}")
-    public ResponseEntity<Product> updateProduct(@PathVariable Long id, @RequestBody Product updatedProduct) {
+    public ResponseEntity<ProductDTO> updateProduct(@PathVariable Long id, @RequestBody ProductDTO updatedProductDTO) {
         return productRepository.findById(id)
                 .map(product -> {
-                    product.setNombre(updatedProduct.getNombre());
-                    product.setDescripcion(updatedProduct.getDescripcion());
-                    product.setCategoria(updatedProduct.getCategoria());
-                    product.setPrecio(updatedProduct.getPrecio()); // <-- REVERTIDO AL CAMPO ORIGINAL
-                    product.setStock(updatedProduct.getStock());
-                    product.setStockMinimo(updatedProduct.getStockMinimo());
-                    product.setMarca(updatedProduct.getMarca());
-                    product.setCodigoBarras(updatedProduct.getCodigoBarras());
-                    product.setProveedor(updatedProduct.getProveedor());
-                    product.setUbicacion(updatedProduct.getUbicacion());
+                    product.setNombre(updatedProductDTO.getNombre());
+                    product.setDescripcion(updatedProductDTO.getDescripcion());
+                    product.setCategoria(updatedProductDTO.getCategoria());
+                    product.setPrecio(updatedProductDTO.getPrecio());
+                    product.setStock(updatedProductDTO.getStock());
+                    product.setStockMinimo(updatedProductDTO.getStockMinimo());
+                    product.setMarca(updatedProductDTO.getMarca());
+                    product.setCodigoBarras(updatedProductDTO.getCodigoBarras());
+                    product.setProveedor(entityMapper.toEntity(updatedProductDTO.getProveedor()));
+                    product.setUbicacion(updatedProductDTO.getUbicacion());
 
-                    productRepository.save(product);
-                    return ResponseEntity.ok(product);
+                    Product savedProduct = productRepository.save(product);
+                    return ResponseEntity.ok(entityMapper.toDTO(savedProduct));
                 })
-                .orElse(ResponseEntity.notFound().build());
+                .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado con id: " + id));
     }
-    
-    // Endpoint para OBTENER productos con bajo stock (GET /api/products/stock-bajo)
+
     @GetMapping("/stock-bajo")
-    public List<Product> getLowStockProducts() {
-        return productRepository.findLowStockProducts();
+    public List<ProductDTO> getLowStockProducts() {
+        return productRepository.findLowStockProducts().stream()
+                .map(entityMapper::toDTO)
+                .collect(Collectors.toList());
     }
 }

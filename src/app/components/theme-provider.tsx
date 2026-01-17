@@ -2,7 +2,7 @@
 
 import * as React from "react"
 
-type Theme = "default" | "blue" | "green" | "purple" | "orange" | "red"
+type Theme = "default" | "blue" | "green" | "purple" | "red" | "slate" | "stone" | "rose" | "cyan"
 
 type ThemeProviderProps = {
   children: React.ReactNode
@@ -22,33 +22,31 @@ const initialState: ThemeProviderState = {
 const ThemeProviderContext = React.createContext<ThemeProviderState>(initialState)
 
 export function ThemeProvider({ children, defaultTheme = "default", ...props }: ThemeProviderProps) {
-  // 1. Inicializa el estado con el tema por defecto.
-  //    Esto garantiza que el servidor y el navegador rendericen lo mismo la primera vez.
   const [theme, setTheme] = React.useState<Theme>(defaultTheme)
 
-  // 2. Usamos un 'useEffect' para leer el tema del localStorage.
-  //    Este código solo se ejecuta en el navegador, DESPUÉS del primer renderizado,
-  //    evitando así el error de hidratación.
   React.useEffect(() => {
     const savedTheme = localStorage.getItem("sisgi-theme") as Theme
     if (savedTheme) {
       setTheme(savedTheme)
     }
-  }, []) // El array vacío asegura que solo se ejecute una vez al montar el componente.
+  }, [])
 
   React.useEffect(() => {
-    // 3. Este segundo efecto se encarga de aplicar la clase al HTML
-    //    y guardar en localStorage cada vez que el tema cambia.
     const root = document.documentElement
     // Limpiamos clases de temas anteriores
-    root.classList.remove(
+    const themeClasses = [
       "theme-default",
+      "theme-blue",
       "theme-green",
       "theme-purple",
-      "theme-orange",
       "theme-red",
-      "theme-blue"
-    )
+      "theme-slate",
+      "theme-stone",
+      "theme-rose",
+      "theme-cyan"
+    ]
+    root.classList.remove(...themeClasses)
+
     // Agregamos la clase del tema actual y lo guardamos
     if (theme) {
       root.classList.add(`theme-${theme}`)
