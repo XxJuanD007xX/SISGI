@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { AppSidebar } from "@/app/components/app-sidebar"
 import {
   Breadcrumb,
@@ -12,86 +12,83 @@ import {
 } from "@/components/ui/breadcrumb"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { BarChart3, Plus, FileText, Download, Calendar, TrendingUp, DollarSign, Truck, Clock, Filter, FileSpreadsheet } from "lucide-react"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  FileText,
+  Download,
+  Filter,
+  Printer,
+  Calendar as CalendarIcon
+} from "lucide-react"
 import { toast } from "sonner"
-
-interface ReporteStats {
-  totalProductos: number;
-  valorInventario: number;
-  totalProveedores: number;
-  ordenesPendientes: number;
-}
-
-// Datos simulados para el reporte de ventas (esto vendría de tu API)
-const datosVentas = [
-  { id: 1, fecha: "2024-01-15", producto: "Smartwatch Pro", cantidad: 5, total: 2750000, cliente: "Juan Pérez" },
-  { id: 2, fecha: "2024-01-16", producto: "Camiseta DryFit", cantidad: 10, total: 450000, cliente: "Ana Gómez" },
-  { id: 3, fecha: "2024-01-17", producto: "Audífonos BT", cantidad: 3, total: 360000, cliente: "Carlos Ruiz" },
-  { id: 4, fecha: "2024-01-18", producto: "Zapatillas Running", cantidad: 2, total: 600000, cliente: "Maria Lopez" },
-];
+import { format, subDays, isValid, parseISO } from "date-fns" // Importamos isValid y parseISO
+import { es } from "date-fns/locale"
 
 export default function ReportesPage() {
+  const [fechaInicio, setFechaInicio] = useState(format(subDays(new Date(), 30), 'yyyy-MM-dd'))
+  const [fechaFin, setFechaFin] = useState(format(new Date(), 'yyyy-MM-dd'))
 
-  const [stats, setStats] = useState<ReporteStats | null>(null);
-  const [tipoReporte, setTipoReporte] = useState("ventas");
+  const [ventasData, setVentasData] = useState<any[]>([])
+  const [inventarioData, setInventarioData] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
+
+  const fetchDataVentas = async () => {
+    setLoading(true)
+    try {
+      const res = await fetch(`http://localhost:8080/api/reportes/ventas?inicio=${fechaInicio}&fin=${fechaFin}`)
+      if (res.ok) setVentasData(await res.json())
+    } catch (e) {
+      toast.error("Error cargando datos de ventas")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchDataInventario = async () => {
+    setLoading(true)
+    try {
+      const res = await fetch(`http://localhost:8080/api/reportes/inventario`)
+      if (res.ok) setInventarioData(await res.json())
+    } catch (e) {
+      toast.error("Error cargando inventario")
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const response = await fetch("http://localhost:8080/api/reportes/dashboard-stats");
-        if (response.ok) {
-          const data: ReporteStats = await response.json();
-          setStats(data);
-        } else {
-          console.error("Error al obtener las estadísticas del dashboard");
-        }
-      } catch (error) {
-        console.error("Error de conexión al obtener estadísticas:", error);
-      }
-    };
+    fetchDataVentas()
+    fetchDataInventario()
+  }, [])
 
-    fetchStats();
-  }, []);
+  const handleDownloadPdf = (tipo: 'ventas' | 'inventario') => {
+    let url = ""
+    if (tipo === 'ventas') {
+      url = `http://localhost:8080/api/reportes/ventas/pdf?inicio=${fechaInicio}&fin=${fechaFin}`
+    } else {
+      url = `http://localhost:8080/api/reportes/inventario/pdf`
+    }
+    window.open(url, '_blank')
+    toast.success("Generando reporte PDF...")
+  }
 
-  // --- FUNCIÓN DE EXPORTACIÓN A CSV (Excel Compatible) ---
-  const exportarAExcel = () => {
-    // 1. Definir los encabezados
-    const headers = ["ID", "Fecha", "Producto", "Cantidad", "Total", "Cliente"];
-
-    // 2. Convertir los datos a formato CSV
-    const csvContent = [
-      headers.join(","), // Fila de encabezados
-      ...datosVentas.map(row =>
-        `${row.id},"${row.fecha}","${row.producto}",${row.cantidad},${row.total},"${row.cliente}"`
-      )
-    ].join("\n");
-
-    // 3. Crear el Blob y descargar
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `reporte_${tipoReporte}_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    toast.success("Reporte descargado exitosamente");
-  };
+  // --- FUNCIÓN AUXILIAR SEGURA PARA FORMATEAR FECHAS ---
+  const safeFormatDate = (dateString: string) => {
+    const date = parseISO(dateString);
+    return isValid(date) ? format(date, "d MMM", { locale: es }) : "--";
+  }
 
   return (
-    <div className="dark">
+    <div className="dark bg-background min-h-screen">
       <SidebarProvider>
         <AppSidebar />
         <SidebarInset>
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 sticky top-0 bg-background/80 backdrop-blur-md z-10">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
-
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem>
@@ -99,151 +96,161 @@ export default function ReportesPage() {
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
-                  <BreadcrumbPage>Reportes y Análisis</BreadcrumbPage>
+                  <BreadcrumbPage>Centro de Reportes</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
-
           </header>
 
-          <div className="flex flex-1 flex-col gap-4 p-4">
-            {/* Header Section */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
+
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
-                <h1 className="text-3xl font-bold tracking-tight">Reportes y Análisis</h1>
-                <p className="text-muted-foreground">Visualiza métricas clave y exporta datos para tu gestión</p>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={() => toast.info("Generando PDF...")}>
-                  <FileText className="h-4 w-4 mr-2" />
-                  Exportar PDF
-                </Button>
-                <Button onClick={exportarAExcel}>
-                  <FileSpreadsheet className="h-4 w-4 mr-2" />
-                  Exportar Excel
-                </Button>
+                <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+                  <FileText className="h-8 w-8 text-primary" /> Reportes y Análisis
+                </h1>
+                <p className="text-muted-foreground">Genera documentación oficial y analiza el rendimiento.</p>
               </div>
             </div>
 
-            {/* Quick Report Types */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Ventas Totales (Mes)</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">$4,160,000</div>
-                  <p className="text-xs text-green-500 flex items-center mt-1">
-                    <TrendingUp className="h-3 w-3 mr-1" /> +12.5% vs mes anterior
-                  </p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Valor Inventario</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {stats ? `$${stats.valorInventario.toLocaleString()}` : "$..."}
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Proveedores Activos</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stats ? stats.totalProveedores : "..."}</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Pedidos Pendientes</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stats ? stats.ordenesPendientes : "..."}</div>
-                </CardContent>
-              </Card>
-            </div>
+            <Tabs defaultValue="ventas" className="space-y-4">
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+                <TabsList className="grid w-full sm:w-auto grid-cols-2">
+                  <TabsTrigger value="ventas">Reporte de Ventas</TabsTrigger>
+                  <TabsTrigger value="inventario">Valoración de Inventario</TabsTrigger>
+                </TabsList>
 
-            <div className="grid gap-4 md:grid-cols-3">
-
-              {/* Panel Lateral de Filtros */}
-              <Card className="md:col-span-1 h-fit">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Filter className="h-5 w-5" /> Filtros de Reporte
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Tipo de Datos</label>
-                    <Select value={tipoReporte} onValueChange={setTipoReporte}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="ventas">Ventas</SelectItem>
-                        <SelectItem value="inventario">Inventario</SelectItem>
-                        <SelectItem value="proveedores">Proveedores</SelectItem>
-                      </SelectContent>
-                    </Select>
+                <div className="flex items-center gap-2 w-full sm:w-auto bg-muted/50 p-1 rounded-lg border">
+                  <div className="flex items-center gap-2 px-2">
+                    <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-xs font-medium text-muted-foreground">Periodo:</span>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Rango de Fecha</label>
-                    <Select defaultValue="mes">
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="hoy">Hoy</SelectItem>
-                        <SelectItem value="semana">Esta Semana</SelectItem>
-                        <SelectItem value="mes">Este Mes</SelectItem>
-                        <SelectItem value="anio">Este Año</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <Button className="w-full mt-4" onClick={() => toast.success("Filtros aplicados")}>
-                    Aplicar Filtros
+                  <Input
+                    type="date"
+                    className="h-8 w-32 text-xs bg-background border-none shadow-none focus-visible:ring-0"
+                    value={fechaInicio}
+                    onChange={(e) => setFechaInicio(e.target.value)}
+                  />
+                  <span className="text-muted-foreground">-</span>
+                  <Input
+                    type="date"
+                    className="h-8 w-32 text-xs bg-background border-none shadow-none focus-visible:ring-0"
+                    value={fechaFin}
+                    onChange={(e) => setFechaFin(e.target.value)}
+                  />
+                  <Button size="sm" variant="secondary" className="h-8 px-3" onClick={fetchDataVentas}>
+                    <Filter className="h-3 w-3 mr-1" /> Filtrar
                   </Button>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
 
-              {/* Tabla de Datos (Vista Previa) */}
-              <Card className="md:col-span-2">
-                <CardHeader>
-                  <CardTitle>Vista Previa del Reporte</CardTitle>
-                  <CardDescription>Mostrando datos de {tipoReporte} para el periodo seleccionado.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="rounded-md border">
-                    <table className="w-full text-sm text-left">
-                      <thead className="bg-muted/50 text-muted-foreground">
-                        <tr>
-                          <th className="p-3 font-medium">Fecha</th>
-                          <th className="p-3 font-medium">Producto</th>
-                          <th className="p-3 font-medium text-right">Cant.</th>
-                          <th className="p-3 font-medium text-right">Total</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {datosVentas.map((venta) => (
-                          <tr key={venta.id} className="border-t hover:bg-muted/50 transition-colors">
-                            <td className="p-3">{venta.fecha}</td>
-                            <td className="p-3 font-medium">{venta.producto}</td>
-                            <td className="p-3 text-right">{venta.cantidad}</td>
-                            <td className="p-3 text-right">${venta.total.toLocaleString()}</td>
+              {/* --- TAB: VENTAS --- */}
+              <TabsContent value="ventas" className="space-y-4">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                      <CardTitle>Histórico de Ventas</CardTitle>
+                      {/* USAMOS LA FUNCIÓN SEGURA AQUÍ PARA EVITAR EL ERROR */}
+                      <CardDescription>
+                        Mostrando {ventasData.length} registros del {safeFormatDate(fechaInicio)} al {safeFormatDate(fechaFin)}.
+                      </CardDescription>
+                    </div>
+                    <Button onClick={() => handleDownloadPdf('ventas')}>
+                      <Printer className="h-4 w-4 mr-2" /> Imprimir / PDF Oficial
+                    </Button>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="rounded-md border overflow-hidden">
+                      <table className="w-full text-sm">
+                        <thead className="bg-muted/50 text-muted-foreground">
+                          <tr className="border-b">
+                            <th className="h-10 px-4 text-left font-medium">ID</th>
+                            <th className="h-10 px-4 text-left font-medium">Fecha</th>
+                            <th className="h-10 px-4 text-left font-medium">Cliente</th>
+                            <th className="h-10 px-4 text-right font-medium">Items</th>
+                            <th className="h-10 px-4 text-right font-medium">Total</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  <div className="mt-4 text-xs text-muted-foreground text-center">
-                    Mostrando 4 de 150 registros. Exporta para ver todo.
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                        </thead>
+                        <tbody>
+                          {loading ? (
+                            <tr><td colSpan={5} className="p-4 text-center">Cargando datos...</td></tr>
+                          ) : ventasData.length === 0 ? (
+                            <tr><td colSpan={5} className="p-4 text-center text-muted-foreground">No hay ventas en este rango.</td></tr>
+                          ) : (
+                            ventasData.map((venta) => (
+                              <tr key={venta.id} className="border-b hover:bg-muted/30 transition-colors">
+                                <td className="p-4 font-medium">#{venta.id}</td>
+                                <td className="p-4">{venta.fechaVenta}</td>
+                                <td className="p-4">{venta.cliente || "Consumidor Final"}</td>
+                                <td className="p-4 text-right">{venta.detalles?.length || 0}</td>
+                                <td className="p-4 text-right font-bold text-emerald-500">
+                                  ${venta.total.toLocaleString()}
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* --- TAB: INVENTARIO --- */}
+              <TabsContent value="inventario" className="space-y-4">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                      <CardTitle>Valoración de Inventario Actual</CardTitle>
+                      <CardDescription>
+                        Snapshot de todos los productos y su valor monetario.
+                      </CardDescription>
+                    </div>
+                    <Button onClick={() => handleDownloadPdf('inventario')} variant="outline" className="border-primary text-primary hover:bg-primary/10">
+                      <Download className="h-4 w-4 mr-2" /> Descargar Reporte PDF
+                    </Button>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="rounded-md border overflow-hidden max-h-[600px] overflow-y-auto">
+                      <table className="w-full text-sm">
+                        <thead className="bg-muted/50 text-muted-foreground sticky top-0">
+                          <tr className="border-b">
+                            <th className="h-10 px-4 text-left font-medium">Producto</th>
+                            <th className="h-10 px-4 text-left font-medium">Categoría</th>
+                            <th className="h-10 px-4 text-right font-medium">Stock</th>
+                            <th className="h-10 px-4 text-right font-medium">Precio Unit.</th>
+                            <th className="h-10 px-4 text-right font-medium">Valor Total</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {inventarioData.map((prod) => (
+                            <tr key={prod.id} className="border-b hover:bg-muted/30 transition-colors">
+                              <td className="p-4 font-medium">{prod.nombre}</td>
+                              <td className="p-4"><span className="px-2 py-1 rounded-full bg-muted text-xs">{prod.categoria}</span></td>
+                              <td className={`p-4 text-right ${prod.stock <= (prod.stockMinimo || 5) ? "text-red-500 font-bold" : ""}`}>
+                                {prod.stock}
+                              </td>
+                              <td className="p-4 text-right">${prod.precio.toLocaleString()}</td>
+                              <td className="p-4 text-right font-mono text-muted-foreground">
+                                ${(prod.stock * prod.precio).toLocaleString()}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="mt-4 flex justify-end">
+                      <div className="bg-card border p-4 rounded-lg shadow-sm min-w-[250px]">
+                        <p className="text-sm text-muted-foreground mb-1">Valor Total del Inventario</p>
+                        <p className="text-2xl font-bold">
+                          ${inventarioData.reduce((acc, curr) => acc + (curr.stock * curr.precio), 0).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
 
           </div>
         </SidebarInset>

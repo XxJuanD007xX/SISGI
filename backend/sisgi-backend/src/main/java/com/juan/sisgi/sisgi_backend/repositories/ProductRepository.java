@@ -6,11 +6,20 @@ package com.juan.sisgi.sisgi_backend.repositories;
 
 import com.juan.sisgi.sisgi_backend.models.Product;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import java.util.List;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
-    // ¡Eso es todo!
-    // Spring Data JPA creará automáticamente métodos como:
-    // save(), findById(), findAll(), deleteById(), etc.
+    
+    @Query("SELECT p FROM Product p WHERE p.stock > 0 AND p.stock <= p.stockMinimo")
+    List<Product> findLowStockProducts();
+
+    // Cuenta productos agrupados por categoría (para la gráfica de torta)
+    @Query("SELECT p.categoria, COUNT(p) FROM Product p GROUP BY p.categoria")
+    List<Object[]> countProductosByCategoria();
+    
+    // Para actividad reciente
+    List<Product> findTop5ByOrderByIdDesc();
 }

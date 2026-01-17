@@ -1,9 +1,10 @@
 "use client"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useEffect, useState } from "react"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { Product } from "./types";
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   TrendingUp,
   TrendingDown,
@@ -11,69 +12,83 @@ import {
   Users,
   Truck,
   AlertTriangle,
-  CheckCircle,
-  Clock,
   DollarSign,
   Bell,
+  ShoppingBag,
+  PlusCircle,
+  FileBarChart,
+  Activity
 } from "lucide-react"
+import Link from "next/link"
 
-export function StatsCards({ lowStockCount }: { lowStockCount: number }) {
-  const stats = [
+// --- COMPONENTE DE TARJETAS DE ESTADÍSTICAS (STATS CARDS) ---
+export function StatsCards() {
+  const [stats, setStats] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch("http://localhost:8080/api/reportes/dashboard-stats")
+      .then(res => res.json())
+      .then(setStats)
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }, [])
+
+  const cards = [
     {
-      title: "Productos Totales",
-      value: "245",
-      change: "+12%",
-      trend: "up",
+      title: "Productos",
+      value: stats?.totalProductos || 0,
       icon: Package,
-      description: "vs mes anterior",
+      color: "text-blue-500",
+      bg: "bg-blue-500/10",
+      desc: "En catálogo"
     },
     {
-      title: "Valor del Inventario",
-      value: "$125,430",
-      change: "+8.2%",
-      trend: "up",
+      title: "Valor Inventario",
+      value: `$${(stats?.valorInventario || 0).toLocaleString()}`,
       icon: DollarSign,
-      description: "valor total actual",
+      color: "text-emerald-500",
+      bg: "bg-emerald-500/10",
+      desc: "Activos totales"
     },
     {
-      title: "Productos con Stock Bajo",
-      value: lowStockCount.toString(),
-      change: `-${lowStockCount}`,
-      trend: "down",
-      icon: AlertTriangle,
-      description: "requieren reabastecimiento",
-    },
-    {
-      title: "Proveedores Activos",
-      value: "15",
-      change: "+2",
-      trend: "up",
+      title: "Proveedores",
+      value: stats?.totalProveedores || 0,
       icon: Truck,
-      description: "de 18 totales",
+      color: "text-purple-500",
+      bg: "bg-purple-500/10",
+      desc: "Socios registrados"
+    },
+    {
+      title: "Pedidos Pendientes",
+      value: stats?.ordenesPendientes || 0,
+      icon: AlertTriangle,
+      color: stats?.ordenesPendientes > 0 ? "text-orange-500" : "text-muted-foreground",
+      bg: stats?.ordenesPendientes > 0 ? "bg-orange-500/10" : "bg-muted",
+      desc: "Requieren atención"
     },
   ]
 
+  if (loading) {
+    return <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-32 rounded-xl" />)}
+    </div>
+  }
+
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      {stats.map((stat, index) => (
-        <Card key={index}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-            <stat.icon className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stat.value}</div>
-            <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-              <span className={`flex items-center ${stat.trend === "up" ? "text-green-600" : "text-red-600"}`}>
-                {stat.trend === "up" ? (
-                  <TrendingUp className="h-3 w-3 mr-1" />
-                ) : (
-                  <TrendingDown className="h-3 w-3 mr-1" />
-                )}
-                {stat.change}
-              </span>
-              <span>{stat.description}</span>
+      {cards.map((stat, index) => (
+        <Card key={index} className="border-none shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-muted/20 to-transparent pointer-events-none" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
+            <CardTitle className="text-sm font-medium text-muted-foreground">{stat.title}</CardTitle>
+            <div className={`p-2 rounded-full ${stat.bg}`}>
+              <stat.icon className={`h-4 w-4 ${stat.color}`} />
             </div>
+          </CardHeader>
+          <CardContent className="relative z-10">
+            <div className="text-2xl font-bold tracking-tight">{stat.value}</div>
+            <p className="text-xs text-muted-foreground mt-1">{stat.desc}</p>
           </CardContent>
         </Card>
       ))}
@@ -81,31 +96,38 @@ export function StatsCards({ lowStockCount }: { lowStockCount: number }) {
   )
 }
 
+// --- ACCIONES RÁPIDAS ---
 export function QuickActions() {
   const actions = [
-    { title: "Nuevo Producto", icon: Package, href: "/dashboard/productos/nuevo", color: "bg-blue-500" },
-    { title: "Nuevo Proveedor", icon: Truck, href: "/dashboard/proveedores/nuevo", color: "bg-green-500" },
-    { title: "Generar Reporte", icon: TrendingUp, href: "/dashboard/reportes/nuevo", color: "bg-purple-500" },
-    { title: "Nuevo Usuario", icon: Users, href: "/dashboard/usuarios/nuevo", color: "bg-orange-500" },
+    { title: "Registrar Venta", icon: ShoppingBag, href: "/dashboard/ventas", gradient: "from-pink-500 to-rose-500" },
+    { title: "Nuevo Producto", icon: PlusCircle, href: "/dashboard/productos", gradient: "from-blue-500 to-cyan-500" },
+    { title: "Crear Orden", icon: Truck, href: "/dashboard/ordenes", gradient: "from-emerald-500 to-green-500" },
+    { title: "Ver Reportes", icon: FileBarChart, href: "/dashboard/reportes", gradient: "from-purple-500 to-indigo-500" },
   ]
 
   return (
-    <Card>
+    <Card className="border-none shadow-lg overflow-hidden relative">
+      <div className="absolute inset-0 bg-gradient-to-br from-muted/20 to-transparent pointer-events-none" />
       <CardHeader>
-        <CardTitle>Acciones Rápidas</CardTitle>
-        <CardDescription>Accesos directos a las funciones más utilizadas</CardDescription>
+        <CardTitle>Acceso Rápido</CardTitle>
+        <CardDescription>Gestión eficiente en un clic</CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-2 gap-4">
+      <CardContent className="relative z-10">
+        <div className="grid grid-cols-2 gap-3">
           {actions.map((action, index) => (
-            <Button key={index} variant="outline" className="h-20 flex-col gap-2" asChild>
-              <a href={action.href}>
-                <div className={`p-2 rounded-lg ${action.color}`}>
-                  <action.icon className="h-5 w-5 text-white" />
+            <Link href={action.href} key={index} className="block">
+              <div className={`group relative overflow-hidden rounded-xl p-4 transition-all hover:scale-[1.02] cursor-pointer border border-border/50 hover:border-transparent`}>
+                <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity bg-gradient-to-br ${action.gradient}`} />
+                <div className="flex flex-col items-center gap-2 text-center">
+                  <div className={`p-2 rounded-full bg-gradient-to-br ${action.gradient} text-white shadow-sm group-hover:shadow-md transition-all`}>
+                    <action.icon className="h-5 w-5" />
+                  </div>
+                  <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors">
+                    {action.title}
+                  </span>
                 </div>
-                <span className="text-sm">{action.title}</span>
-              </a>
-            </Button>
+              </div>
+            </Link>
           ))}
         </div>
       </CardContent>
@@ -113,159 +135,95 @@ export function QuickActions() {
   )
 }
 
-export function InventoryStatus() {
-  const categories = [
-    { name: "Electrónicos", total: 85, inStock: 78, percentage: 92 },
-    { name: "Ropa", total: 120, inStock: 95, percentage: 79 },
-    { name: "Hogar", total: 40, inStock: 38, percentage: 95 },
-  ]
+// --- ACTIVIDAD RECIENTE DINÁMICA ---
+export function RecentActivity() {
+  const [activities, setActivities] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch("http://localhost:8080/api/reportes/actividad-reciente")
+      .then(res => res.ok ? res.json() : [])
+      .then(setActivities)
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }, [])
+
+  if (loading) return <Skeleton className="h-[300px] w-full rounded-xl" />
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Estado del Inventario</CardTitle>
-        <CardDescription>Disponibilidad por categoría</CardDescription>
+    <Card className="h-full border-none shadow-lg overflow-hidden relative">
+      <div className="absolute inset-0 bg-gradient-to-br from-muted/20 to-transparent pointer-events-none" />
+      <CardHeader className="relative z-10">
+        <div className="flex items-center gap-2">
+          <Activity className="h-5 w-5 text-primary" />
+          <CardTitle>Actividad Reciente</CardTitle>
+        </div>
+        <CardDescription>Movimientos en tiempo real del sistema</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {categories.map((category, index) => (
-          <div key={index} className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="font-medium">{category.name}</span>
-              <span className="text-muted-foreground">
-                {category.inStock}/{category.total}
-              </span>
-            </div>
-            <Progress value={category.percentage} className="h-2" />
-          </div>
-        ))}
+      <CardContent className="relative z-10">
+        <div className="space-y-6">
+          {activities.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">No hay actividad reciente.</p>
+          ) : (
+            activities.map((activity, index) => (
+              <div key={index} className="flex items-start space-x-4 group">
+                <div className="relative mt-1">
+                  <div className={`p-2 rounded-full shadow-sm z-10 relative ${activity.tipo === 'venta'
+                    ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
+                    : 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+                    }`}>
+                    {activity.tipo === 'venta' ? <DollarSign className="h-3 w-3" /> : <Package className="h-3 w-3" />}
+                  </div>
+                  {index !== activities.length - 1 && (
+                    <div className="absolute top-8 left-1/2 -translate-x-1/2 w-[1px] h-8 bg-border group-hover:bg-primary/30 transition-colors" />
+                  )}
+                </div>
+                <div className="flex-1 space-y-1">
+                  <p className="text-sm font-medium leading-none">{activity.mensaje}</p>
+                  <p className="text-xs text-muted-foreground capitalize">
+                    {activity.tipo} • {activity.fecha === 'Reciente' ? 'Hace un momento' : new Date(activity.fecha).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </CardContent>
     </Card>
   )
 }
 
-export function RecentActivity() {
-  const activities = [
-    {
-      action: "Producto agregado",
-      item: "Smartphone XYZ-123",
-      time: "Hace 2 horas",
-      type: "success",
-      icon: Package,
-    },
-    {
-      action: "Stock bajo detectado",
-      item: "Auriculares ABC-456",
-      time: "Hace 4 horas",
-      type: "warning",
-      icon: AlertTriangle,
-    },
-    {
-      action: "Nuevo proveedor",
-      item: "Distribuidora Tech",
-      time: "Hace 6 horas",
-      type: "info",
-      icon: Truck,
-    },
-    {
-      action: "Reporte generado",
-      item: "Inventario Mensual",
-      time: "Hace 1 día",
-      type: "success",
-      icon: TrendingUp,
-    },
-  ]
+// --- ALERTA DE STOCK CRÍTICO (Reutilizada pero mejorada visualmente) ---
+export function AlertsPanel({ lowStockProducts }: { lowStockProducts: any[] }) {
+  if (lowStockProducts.length === 0) return null;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Actividad Reciente</CardTitle>
-        <CardDescription>Últimas acciones en el sistema</CardDescription>
+    <Card className="border-l-4 border-l-red-500 shadow-md bg-red-50/50 dark:bg-red-950/10">
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-2 text-red-600 dark:text-red-400 text-base">
+          <Bell className="h-5 w-5 animate-pulse" />
+          Atención Requerida
+        </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {activities.map((activity, index) => (
-            <div key={index} className="flex items-center space-x-4">
-              <div
-                className={`p-2 rounded-full ${
-                  activity.type === "success"
-                    ? "bg-green-100 dark:bg-green-900"
-                    : activity.type === "warning"
-                      ? "bg-yellow-100 dark:bg-yellow-900"
-                      : "bg-blue-100 dark:bg-blue-900"
-                }`}
-              >
-                <activity.icon
-                  className={`h-4 w-4 ${
-                    activity.type === "success"
-                      ? "text-green-600 dark:text-green-400"
-                      : activity.type === "warning"
-                        ? "text-yellow-600 dark:text-yellow-400"
-                        : "text-blue-600 dark:text-blue-400"
-                  }`}
-                />
-              </div>
-              <div className="flex-1 space-y-1">
-                <p className="text-sm font-medium">{activity.action}</p>
-                <p className="text-sm text-muted-foreground">{activity.item}</p>
-              </div>
-              <div className="text-xs text-muted-foreground">{activity.time}</div>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-export function AlertsPanel({ lowStockProducts }: { lowStockProducts: Product[] }) {
-  const alerts = [
-    {
-      title: "Stock Crítico",
-      message: "8 productos requieren reabastecimiento inmediato",
-      type: "error",
-      action: "Ver Productos",
-    },
-    {
-      title: "Orden Pendiente",
-      message: "3 órdenes de compra esperan aprobación",
-      type: "warning",
-      action: "Revisar Órdenes",
-    },
-    {
-      title: "Backup Completado",
-      message: "Respaldo de datos realizado exitosamente",
-      type: "success",
-      action: "Ver Detalles",
-    },
-  ]
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Bell className="h-5 w-5" />
-          Alertas del Sistema
-        </CardTitle>
-        <CardDescription>Notificaciones importantes</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Alerta de Stock Crítico ahora es dinámica */}
-        {lowStockProducts.length > 0 && (
-          <div className="flex items-start space-x-4 p-3 rounded-lg border">
-            <div className="p-1 rounded-full bg-red-100 dark:bg-red-900">
-              <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
-            </div>
-            <div className="flex-1">
-              <h4 className="text-sm font-medium">Stock Crítico</h4>
-              <p className="text-sm text-muted-foreground">
-                {lowStockProducts.length} producto(s) requieren reabastecimiento inmediato.
-              </p>
-              <Button variant="link" size="sm" className="h-auto p-0 mt-1" asChild>
-                <a href="/dashboard/productos">Ver Productos</a>
-              </Button>
-            </div>
+        <div className="space-y-2">
+          <p className="text-sm text-muted-foreground">
+            Hay <strong>{lowStockProducts.length} productos</strong> con stock crítico.
+          </p>
+          <div className="flex flex-wrap gap-2 mt-2">
+            {lowStockProducts.slice(0, 3).map((p: any) => (
+              <span key={p.id} className="px-2 py-1 text-xs rounded-md bg-background border text-red-500 font-medium">
+                {p.nombre} ({p.stock})
+              </span>
+            ))}
+            {lowStockProducts.length > 3 && (
+              <span className="px-2 py-1 text-xs text-muted-foreground">+{lowStockProducts.length - 3} más</span>
+            )}
           </div>
-        )}
+          <Button variant="link" size="sm" className="px-0 text-red-500 h-auto mt-2" asChild>
+            <Link href="/dashboard/productos">Gestionar Inventario &rarr;</Link>
+          </Button>
+        </div>
       </CardContent>
     </Card>
   )
