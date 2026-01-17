@@ -209,4 +209,91 @@ public class EntityMapper {
         doc.setProducto(toEntity(dto.getProducto()));
         return doc;
     }
+
+    // --- CARPETA ---
+    public CarpetaDTO toDTO(Carpeta carpeta) {
+        if (carpeta == null) return null;
+        CarpetaDTO dto = new CarpetaDTO();
+        dto.setId(carpeta.getId());
+        dto.setNombre(carpeta.getNombre());
+        dto.setColor(carpeta.getColor());
+        dto.setAutor(carpeta.getAutor());
+        dto.setFechaCreacion(carpeta.getFechaCreacion());
+        if (carpeta.getParent() != null) {
+            dto.setParentId(carpeta.getParent().getId());
+        }
+        return dto;
+    }
+
+    public Carpeta toEntity(CarpetaDTO dto) {
+        if (dto == null) return null;
+        Carpeta c = new Carpeta();
+        c.setId(dto.getId());
+        c.setNombre(dto.getNombre());
+        c.setColor(dto.getColor());
+        c.setAutor(dto.getAutor());
+        return c;
+    }
+
+    // --- DOCUMENTO ---
+    public DocumentoDTO toDTO(Documento doc) {
+        if (doc == null) return null;
+        DocumentoDTO dto = new DocumentoDTO();
+        dto.setId(doc.getId());
+        dto.setNombre(doc.getNombre());
+        dto.setExtension(doc.getExtension());
+        dto.setTipo(doc.getTipo());
+        dto.setUrl(doc.getUrl());
+        dto.setSize(doc.getSize());
+        dto.setAutor(doc.getAutor());
+        dto.setFechaCreacion(doc.getFechaCreacion());
+        if (doc.getCarpeta() != null) {
+            dto.setCarpetaId(doc.getCarpeta().getId());
+        }
+        return dto;
+    }
+
+    public Documento toEntity(DocumentoDTO dto) {
+        if (dto == null) return null;
+        Documento d = new Documento();
+        d.setId(dto.getId());
+        d.setNombre(dto.getNombre());
+        d.setExtension(dto.getExtension());
+        d.setTipo(dto.getTipo());
+        d.setUrl(dto.getUrl());
+        d.setSize(dto.getSize());
+        d.setAutor(dto.getAutor());
+        return d;
+    }
+
+    // --- EVENTO ---
+    public EventoDTO toDTO(Evento evento) {
+        if (evento == null) return null;
+        EventoDTO dto = new EventoDTO();
+        dto.setId(evento.getId());
+        dto.setTitulo(evento.getTitulo());
+        dto.setDescripcion(evento.getDescripcion());
+        dto.setFecha(evento.getFecha());
+        dto.setHoraInicio(evento.getHoraInicio());
+        dto.setHoraFin(evento.getHoraFin());
+        dto.setTipo(evento.getTipo());
+        dto.setColor(evento.getColor());
+        dto.setTextColor(evento.getTextColor());
+        return dto;
+    }
+
+    public Evento toEntity(EventoDTO dto) {
+        if (dto == null) return null;
+        Evento e = new Evento();
+        e.setId(dto.getId());
+        e.setTitulo(dto.getTitulo());
+        e.setDescripcion(dto.getDescripcion());
+        e.setFecha(dto.getFecha());
+        e.setHoraInicio(dto.getHoraInicio());
+        e.setHoraFin(dto.getHoraFin());
+        e.setTipo(dto.getTipo());
+        e.setColor(dto.getColor());
+        e.setTextColor(dto.getTextColor());
+        return e;
+    }
 }

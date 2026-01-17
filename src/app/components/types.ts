@@ -71,3 +71,25 @@ export interface Venta {
   motivoAnulacion?: string;
   detalles: DetalleVenta[];
 }
+
+// INTERFAZ PARA DRIVE
+export interface Carpeta {
+  id?: number;
+  nombre: string;
+  color?: string;
+  autor?: string;
+  fechaCreacion?: string;
+  parentId?: number;
+}
+
+export interface Documento {
+  id?: number;
+  nombre: string;
+  extension?: string;
+  tipo: string; // file, video, image
+  url?: string;
+  size?: string;
+  autor?: string;
+  fechaCreacion?: string;
+  carpetaId?: number;
+}

@@ -5,33 +5,12 @@ import { AppSidebar } from "@/app/components/app-sidebar"
 import { StatsCards, QuickActions, RecentActivity, AlertsPanel } from "@/app/components/dashboard-widgets"
 import { SalesChart } from "@/app/components/charts/sales-chart"
 import { CategoryChart } from "@/app/components/charts/category-chart"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
-import { Separator } from "@/components/ui/separator"
-import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { Badge } from "@/components/ui/badge"
-import { Calendar, Clock, Zap, AlertTriangle } from "lucide-react"
-import { ThemeSwitcher } from "@/app/components/theme-switcher"
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import { Zap, AlertTriangle } from "lucide-react"
 import { Product } from "@/app/components/types";
+import { DashboardHeader } from "@/app/components/dashboard-header";
 
 export default function Dashboard() {
-  // Fecha en español
-  const [currentDate, setCurrentDate] = useState("")
-
-  useEffect(() => {
-    setCurrentDate(new Date().toLocaleDateString("es-ES", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    }))
-  }, [])
 
   const [lowStockProducts, setLowStockProducts] = useState<Product[]>([]);
 
@@ -55,29 +34,7 @@ export default function Dashboard() {
       <SidebarProvider>
         <AppSidebar />
         <SidebarInset>
-          {/* Header */}
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 sticky top-0 bg-background/80 backdrop-blur-md z-50 transition-all">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 h-4" />
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="/dashboard">SISGI</BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Resumen General</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-            <div className="ml-auto flex items-center gap-3">
-              <ThemeSwitcher />
-              <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-muted/50 border border-border/50 text-xs font-medium">
-                <Calendar className="w-3.5 h-3.5 text-primary" />
-                <span className="capitalize">{currentDate}</span>
-              </div>
-            </div>
-          </header>
+          <DashboardHeader pageTitle="Resumen General" />
 
           {/* Main Content */}
           <div className="flex flex-1 flex-col gap-6 p-4 lg:p-6 max-w-[1600px] mx-auto w-full animate-in fade-in-50 duration-500">

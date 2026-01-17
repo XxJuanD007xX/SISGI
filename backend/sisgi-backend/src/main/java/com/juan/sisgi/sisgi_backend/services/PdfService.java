@@ -11,6 +11,7 @@ import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.awt.Color;
@@ -25,16 +26,13 @@ import java.util.Locale;
 @Service
 public class PdfService {
 
-    @org.springframework.beans.factory.annotation.Autowired
+    @Autowired
     private ConfiguracionRepository configuracionRepository;
 
-    // --- NUEVA PALETA DE COLORES SUAVE ---
-    private static final Color COLOR_PRIMARY = new Color(225, 29, 72);
-    private static final Color COLOR_HEADER_BG = new Color(240, 240, 240); // Gris muy claro
-    private static final Color COLOR_TEXT_HEADER = Color.BLACK;
-    private static final Color COLOR_TEXT_BODY = new Color(40, 40, 40);
-    private static final Color COLOR_WHITE = Color.WHITE;
-    private static final Color COLOR_BLACK = Color.BLACK;
+    private static final Color COLOR_PRIMARY = new Color(30, 41, 59); // Slate 800
+    private static final Color COLOR_ACCENT = new Color(37, 99, 235); // Blue 600
+    private static final Color COLOR_BORDER = new Color(226, 232, 240); // Slate 200
+    private static final Color COLOR_BG_HEADER = new Color(248, 250, 252); // Slate 50
 
     private static final PDType1Font FONT_BOLD = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
     private static final PDType1Font FONT_NORMAL = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
@@ -47,189 +45,173 @@ public class PdfService {
             PDPage page = new PDPage(PDRectangle.A4);
             document.addPage(page);
 
+            Configuracion config = configuracionRepository.findFirstByOrderByIdAsc().orElse(new Configuracion());
+
             try (PDPageContentStream cs = new PDPageContentStream(document, page)) {
-                float yPosition = page.getMediaBox().getHeight() - MARGIN;
+                float y = page.getMediaBox().getHeight() - MARGIN;
 
-                drawHeader(cs, page, yPosition, orden);
-                yPosition -= 100;
+                // --- ENCABEZADO ---
+                drawHeader(cs, page, y, config, orden.getId());
+                y -= 100;
+
+                // --- INFO EMPRESA Y PROVEEDOR ---
+                drawAddresses(cs, y, config, orden.getProveedor(), orden.getFechaOrden());
+                y -= 120;
+
+                // --- TABLA DE PRODUCTOS ---
+                y = drawItemsTable(cs, page, y, orden);
                 
-                drawAddresseeInfo(cs, yPosition, orden.getProveedor());
-                yPosition -= 90;
+                // --- TOTALES Y OBSERVACIONES ---
+                drawTotals(cs, page, y, orden);
 
-                yPosition = drawTable(cs, yPosition, orden);
-                yPosition -= 20;
-
-                drawTotalsAndNotes(cs, page, yPosition, orden);
-                
-                drawFooter(cs, page);
+                // --- PIE DE PÁGINA ---
+                drawFooter(cs, page, config);
             }
             document.save(out);
         }
         return new ByteArrayInputStream(out.toByteArray());
     }
 
-    private void drawHeader(PDPageContentStream cs, PDPage page, float y, OrdenCompra orden) throws IOException {
-        // Título principal
-        writeText(cs, FONT_BOLD, 28, MARGIN, y, "ORDEN DE COMPRA");
+    private void drawHeader(PDPageContentStream cs, PDPage page, float y, Configuracion config, Long ordenId) throws IOException {
+        String empresa = config.getNombreEmpresa() != null ? config.getNombreEmpresa() : "SISGI - Gestión de Inventarios";
         
-        // Línea de acento debajo del título
-        drawDividerLine(cs, MARGIN, y - 8, 250);
+        // Logo Placeholder o Texto
+        cs.setNonStrokingColor(COLOR_ACCENT);
+        cs.addRect(MARGIN, y - 5, 40, 40);
+        cs.fill();
+        
+        writeText(cs, FONT_BOLD, 20, MARGIN + 50, y + 20, empresa.toUpperCase());
+        writeText(cs, FONT_NORMAL, 10, MARGIN + 50, y + 5, "Orden de Compra Oficial");
 
-        // --- BLOQUE CORREGIDO ---
-        // Coordenadas base para la sección de detalles
-        float detailsBlockX = page.getMediaBox().getWidth() - MARGIN - 200;
-        float labelX = detailsBlockX;
-        float valueX = detailsBlockX + 100; // Columna para los valores
-
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd 'de' MMMM, yyyy", new Locale("es", "ES"));
+        // Info de la Orden a la Derecha
+        float rightAlignX = page.getMediaBox().getWidth() - MARGIN;
+        cs.setNonStrokingColor(COLOR_PRIMARY);
+        writeTextRight(cs, FONT_BOLD, 14, rightAlignX, y + 20, "ORDEN # " + String.format("%05d", ordenId));
+        writeTextRight(cs, FONT_NORMAL, 10, rightAlignX, y + 5, "Original");
         
-        // Escribir las etiquetas en su columna
-        writeText(cs, FONT_NORMAL, 10, labelX, y, "Fecha de Emisión:");
-        writeText(cs, FONT_NORMAL, 10, labelX, y - 15, "Orden de Compra #:");
-        
-        // Escribir los valores en su propia columna, evitando el solapamiento
-        writeText(cs, FONT_BOLD, 10, valueX, y, orden.getFechaOrden().format(formatter));
-        writeText(cs, FONT_BOLD, 10, valueX, y - 15, String.valueOf(orden.getId()));
+        cs.setStrokingColor(COLOR_BORDER);
+        cs.setLineWidth(1);
+        cs.moveTo(MARGIN, y - 20);
+        cs.lineTo(rightAlignX, y - 20);
+        cs.stroke();
     }
 
-    private void drawAddresseeInfo(PDPageContentStream cs, float y, Proveedor proveedor) throws IOException {
-        float secondColumnX = 320;
+    private void drawAddresses(PDPageContentStream cs, float y, Configuracion config, Proveedor prov, LocalDate fecha) throws IOException {
+        float colWidth = 240;
         
-        Configuracion config = configuracionRepository.findFirstByOrderByIdAsc().orElse(new Configuracion());
-        if (config.getNombreEmpresa() == null) config.setNombreEmpresa("Variedades Dipal");
-        if (config.getNit() == null) config.setNit("123.456.789-0");
-        if (config.getDireccion() == null) config.setDireccion("Calle Falsa 123, Bodega 5");
-        if (config.getTelefono() == null) config.setTelefono("555-0123");
+        // Columna Izquierda: Proveedor
+        writeText(cs, FONT_BOLD, 9, MARGIN, y, "DATOS DEL PROVEEDOR");
+        y -= 20;
+        writeText(cs, FONT_BOLD, 11, MARGIN, y, prov.getNombreEmpresa());
+        y -= 15;
+        writeText(cs, FONT_NORMAL, 9, MARGIN, y, "NIT: " + prov.getNitRuc());
+        y -= 15;
+        writeText(cs, FONT_NORMAL, 9, MARGIN, y, "Contacto: " + prov.getPersonaContacto());
+        y -= 15;
+        writeText(cs, FONT_NORMAL, 9, MARGIN, y, "Email: " + prov.getEmail());
 
-        // Información del Proveedor
-        writeText(cs, FONT_BOLD, 10, MARGIN, y, "PROVEEDOR");
-        cs.setStrokingColor(Color.LIGHT_GRAY);
-        cs.moveTo(MARGIN, y - 5); cs.lineTo(MARGIN + 250, y - 5); cs.stroke();
-        writeText(cs, FONT_BOLD, 10, MARGIN, y - 20, proveedor.getNombreEmpresa());
-        writeText(cs, FONT_NORMAL, 9, MARGIN, y - 35, "Contacto: " + proveedor.getPersonaContacto());
-        writeText(cs, FONT_NORMAL, 9, MARGIN, y - 50, "Email: " + proveedor.getEmail());
-        writeText(cs, FONT_NORMAL, 9, MARGIN, y - 65, "NIT/RUC: " + proveedor.getNitRuc());
-
-        // Información de Envío
-        writeText(cs, FONT_BOLD, 10, secondColumnX, y, "ENVIAR A");
-        cs.moveTo(secondColumnX, y - 5); cs.lineTo(secondColumnX + 235, y - 5); cs.stroke();
-        writeText(cs, FONT_BOLD, 10, secondColumnX, y - 20, config.getNombreEmpresa());
-        writeText(cs, FONT_NORMAL, 9, secondColumnX, y - 35, config.getDireccion());
-        writeText(cs, FONT_NORMAL, 9, secondColumnX, y - 50, "Tel: " + config.getTelefono());
-        writeText(cs, FONT_NORMAL, 9, secondColumnX, y - 65, "NIT: " + config.getNit());
+        // Columna Derecha: Empresa (Destino)
+        float x2 = MARGIN + 300;
+        float y2 = y + 65;
+        writeText(cs, FONT_BOLD, 9, x2, y2, "ENVIAR A / FACTURAR A");
+        y2 -= 20;
+        writeText(cs, FONT_BOLD, 11, x2, y2, config.getNombreEmpresa() != null ? config.getNombreEmpresa() : "Variedades Dipal");
+        y2 -= 15;
+        writeText(cs, FONT_NORMAL, 9, x2, y2, "NIT: " + (config.getNit() != null ? config.getNit() : "N/A"));
+        y2 -= 15;
+        writeText(cs, FONT_NORMAL, 9, x2, y2, config.getDireccion() != null ? config.getDireccion() : "Dirección no configurada");
+        y2 -= 15;
+        writeText(cs, FONT_NORMAL, 9, x2, y2, "Fecha: " + fecha.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
     }
 
-    private float drawTable(PDPageContentStream cs, float y, OrdenCompra orden) throws IOException {
-        float[] columnWidths = {260f, 60f, 90f, 105f};
-        String[] headers = {"PRODUCTO / DESCRIPCIÓN", "CANT.", "PRECIO UNIT.", "SUBTOTAL"};
-        
-        drawTableRow(cs, y, columnWidths, headers, FONT_BOLD, COLOR_HEADER_BG, COLOR_TEXT_HEADER, 25);
-        y -= 25;
+    private float drawItemsTable(PDPageContentStream cs, PDPage page, float y, OrdenCompra orden) throws IOException {
+        float[] colWidths = {250, 60, 90, 100};
+        String[] headers = {"Descripción del Producto", "Cant.", "P. Unitario", "Subtotal"};
 
-        for (DetalleOrdenCompra detalle : orden.getDetalles()) {
-            NumberFormat currency = NumberFormat.getCurrencyInstance(new Locale("es", "CO"));
-            String[] rowData = {
-                detalle.getProducto().getNombre(),
-                String.valueOf(detalle.getCantidad()),
-                currency.format(detalle.getPrecioUnitario()),
-                currency.format(detalle.getCantidad() * detalle.getPrecioUnitario())
-            };
-            drawTableRow(cs, y, columnWidths, rowData, FONT_NORMAL, COLOR_WHITE, COLOR_TEXT_BODY, 25);
+        // Encabezado Tabla
+        cs.setNonStrokingColor(COLOR_BG_HEADER);
+        cs.addRect(MARGIN, y - 10, page.getMediaBox().getWidth() - 2 * MARGIN, 25);
+        cs.fill();
+        
+        cs.setStrokingColor(COLOR_BORDER);
+        cs.addRect(MARGIN, y - 10, page.getMediaBox().getWidth() - 2 * MARGIN, 25);
+        cs.stroke();
+
+        float x = MARGIN + 10;
+        cs.setNonStrokingColor(COLOR_PRIMARY);
+        for (int i = 0; i < headers.length; i++) {
+            writeText(cs, FONT_BOLD, 9, x, y, headers[i]);
+            x += colWidths[i];
+        }
+
+        y -= 35;
+        NumberFormat nf = NumberFormat.getCurrencyInstance(new Locale("es", "CO"));
+
+        for (DetalleOrdenCompra d : orden.getDetalles()) {
+            cs.setNonStrokingColor(Color.BLACK);
+            writeText(cs, FONT_NORMAL, 9, MARGIN + 10, y, d.getProducto().getNombre());
+            writeText(cs, FONT_NORMAL, 9, MARGIN + colWidths[0] + 10, y, String.valueOf(d.getCantidad()));
+            writeText(cs, FONT_NORMAL, 9, MARGIN + colWidths[0] + colWidths[1] + 10, y, nf.format(d.getPrecioUnitario()));
+            writeText(cs, FONT_BOLD, 9, MARGIN + colWidths[0] + colWidths[1] + colWidths[2] + 10, y, nf.format(d.getCantidad() * d.getPrecioUnitario()));
+
+            cs.setStrokingColor(COLOR_BORDER);
+            cs.moveTo(MARGIN, y - 8);
+            cs.lineTo(page.getMediaBox().getWidth() - MARGIN, y - 8);
+            cs.stroke();
+
             y -= 25;
         }
-        
+
         return y;
     }
 
-    private void drawTotalsAndNotes(PDPageContentStream cs, PDPage page, float y, OrdenCompra orden) throws IOException {
-        NumberFormat currency = NumberFormat.getCurrencyInstance(new Locale("es", "CO"));
-        double subtotal = orden.getDetalles().stream().mapToDouble(d -> d.getCantidad() * d.getPrecioUnitario()).sum();
-        double iva = subtotal * 0.19;
-        double total = subtotal + iva;
+    private void drawTotals(PDPageContentStream cs, PDPage page, float y, OrdenCompra orden) throws IOException {
+        NumberFormat nf = NumberFormat.getCurrencyInstance(new Locale("es", "CO"));
+        float rightX = page.getMediaBox().getWidth() - MARGIN;
+        float labelX = rightX - 150;
 
-        float totalsXLabel = page.getMediaBox().getWidth() - MARGIN - 200;
-        float totalsXValue = page.getMediaBox().getWidth() - MARGIN - 100;
-
+        y -= 10;
         writeText(cs, FONT_BOLD, 9, MARGIN, y, "OBSERVACIONES:");
-        writeText(cs, FONT_NORMAL, 9, MARGIN, y - 15, orden.getObservaciones() != null && !orden.getObservaciones().isEmpty() ? orden.getObservaciones() : "Ninguna.");
-        
-        y -= 20;
-        writeTextRightAlign(cs, FONT_NORMAL, 10, totalsXLabel, y, "Subtotal:");
-        writeTextRightAlign(cs, FONT_NORMAL, 10, totalsXValue, y, currency.format(subtotal));
-        y -= 20;
-        
-        writeTextRightAlign(cs, FONT_NORMAL, 10, totalsXLabel, y, "IVA (19%):");
-        writeTextRightAlign(cs, FONT_NORMAL, 10, totalsXValue, y, currency.format(iva));
-        y -= 5;
-        
-        cs.setStrokingColor(Color.LIGHT_GRAY);
-        cs.moveTo(totalsXLabel, y); cs.lineTo(totalsXValue + 100, y); cs.stroke();
-        y -= 20;
+        writeText(cs, FONT_NORMAL, 9, MARGIN, y - 15, orden.getObservaciones() != null ? orden.getObservaciones() : "Sin observaciones adicionales.");
 
-        writeTextRightAlign(cs, FONT_BOLD, 12, totalsXLabel, y, "TOTAL:");
-        writeTextRightAlign(cs, FONT_BOLD, 12, totalsXValue, y, currency.format(total));
+        writeText(cs, FONT_NORMAL, 10, labelX, y, "SUBTOTAL:");
+        writeTextRight(cs, FONT_NORMAL, 10, rightX, y, nf.format(orden.getTotal()));
+        
+        y -= 20;
+        cs.setNonStrokingColor(COLOR_BG_HEADER);
+        cs.addRect(labelX - 10, y - 10, 160, 30);
+        cs.fill();
+        cs.setStrokingColor(COLOR_ACCENT);
+        cs.addRect(labelX - 10, y - 10, 160, 30);
+        cs.stroke();
+
+        cs.setNonStrokingColor(COLOR_ACCENT);
+        writeText(cs, FONT_BOLD, 12, labelX, y, "TOTAL NETO:");
+        writeTextRight(cs, FONT_BOLD, 12, rightX, y, nf.format(orden.getTotal()));
     }
 
-    private void drawFooter(PDPageContentStream cs, PDPage page) throws IOException {
-        Configuracion config = configuracionRepository.findFirstByOrderByIdAsc().orElse(new Configuracion());
-        String empresa = config.getNombreEmpresa() != null ? config.getNombreEmpresa() : "Variedades Dipal";
+    private void drawFooter(PDPageContentStream cs, PDPage page, Configuracion config) throws IOException {
+        float y = 40;
+        cs.setNonStrokingColor(Color.GRAY);
+        String text = "Este documento es una representación oficial de " + (config.getNombreEmpresa() != null ? config.getNombreEmpresa() : "SISGI") + ".";
+        float width = FONT_NORMAL.getStringWidth(text) / 1000 * 8;
+        writeText(cs, FONT_NORMAL, 8, (page.getMediaBox().getWidth() - width) / 2, y, text);
 
-        String footerText = "Documento generado por SISGI | " + empresa + " | " + LocalDate.now().getYear();
-        float textWidth = getTextWidth(FONT_NORMAL, 8, footerText);
-        float centerX = (page.getMediaBox().getWidth() - textWidth) / 2;
-        writeText(cs, FONT_NORMAL, 8, centerX, 30, footerText);
+        String pageInfo = "Generado por SISGI v2.5 | " + LocalDate.now().getYear();
+        float width2 = FONT_NORMAL.getStringWidth(pageInfo) / 1000 * 7;
+        writeText(cs, FONT_NORMAL, 7, (page.getMediaBox().getWidth() - width2) / 2, y - 12, pageInfo);
     }
 
-    // --- MÉTODOS DE AYUDA (HELPERS) PARA DIBUJAR ---
-
-    private void writeText(PDPageContentStream cs, PDType1Font font, float fontSize, float x, float y, String text) throws IOException {
+    private void writeText(PDPageContentStream cs, PDType1Font font, float size, float x, float y, String text) throws IOException {
         cs.beginText();
-        cs.setFont(font, fontSize);
+        cs.setFont(font, size);
         cs.newLineAtOffset(x, y);
         cs.showText(text != null ? text : "");
         cs.endText();
     }
-    
-    private void writeTextRightAlign(PDPageContentStream cs, PDType1Font font, float fontSize, float x, float y, String text) throws IOException {
-        float textWidth = getTextWidth(font, fontSize, text);
-        writeText(cs, font, fontSize, x - textWidth, y, text);
-    }
 
-    private float getTextWidth(PDType1Font font, float fontSize, String text) throws IOException {
-        return font.getStringWidth(text != null ? text : "") / 1000f * fontSize;
-    }
-    
-    private void drawDividerLine(PDPageContentStream cs, float x, float y, float width) throws IOException {
-        cs.setStrokingColor(COLOR_PRIMARY);
-        cs.setLineWidth(2f);
-        cs.moveTo(x, y);
-        cs.lineTo(x + width, y);
-        cs.stroke();
-        cs.setLineWidth(1f); // Reset
-    }
-
-    private void drawTableRow(PDPageContentStream cs, float y, float[] colWidths, String[] text, PDType1Font font, Color bgColor, Color textColor, float height) throws IOException {
-        float x = MARGIN;
-        float tableWidth = colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3];
-        
-        cs.setNonStrokingColor(bgColor);
-        cs.addRect(x, y - (height / 2) + 2, tableWidth, height);
-        cs.fill();
-
-        cs.setStrokingColor(Color.LIGHT_GRAY);
-        cs.moveTo(x, y - (height / 2) + 2);
-        cs.lineTo(x + tableWidth, y - (height / 2) + 2);
-        cs.stroke();
-
-        cs.setNonStrokingColor(textColor);
-        float textY = y + (height / 2) - 12;
-        
-        // Alinear texto en cada celda
-        writeText(cs, font, 9, x + 10, textY, text[0]); // Descripción (izquierda)
-        writeTextRightAlign(cs, font, 9, x + colWidths[0], textY, text[1]); // Cantidad (derecha)
-        x += colWidths[0];
-        writeTextRightAlign(cs, font, 9, x + colWidths[1], textY, text[2]); // P/U (derecha)
-        x += colWidths[1];
-        writeTextRightAlign(cs, font, 9, x + colWidths[2], textY, text[3]); // Total (derecha)
+    private void writeTextRight(PDPageContentStream cs, PDType1Font font, float size, float x, float y, String text) throws IOException {
+        float width = font.getStringWidth(text != null ? text : "") / 1000 * size;
+        writeText(cs, font, size, x - width, y, text);
     }
 }
