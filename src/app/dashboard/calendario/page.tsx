@@ -2,17 +2,9 @@
 
 import { useState, useMemo, useEffect } from "react"
 import { AppSidebar } from "@/app/components/app-sidebar"
-import {
-    Breadcrumb,
-    BreadcrumbItem,
-    BreadcrumbLink,
-    BreadcrumbList,
-    BreadcrumbPage,
-    BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
+import { DashboardHeader } from "@/app/components/dashboard-header";
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import {
     ChevronLeft,
@@ -46,51 +38,24 @@ import {
 import { toast } from "sonner"
 import {
     format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval,
-    isSameMonth, isSameDay, isToday, addWeeks, subWeeks, addDays, subDays, getYear, addYears, subYears
+    isSameMonth, isSameDay, isToday, addWeeks, subWeeks, addDays, subDays, getYear, addYears, subYears, parseISO
 } from "date-fns"
 import { es } from "date-fns/locale"
 import { getColombiaHolidays, isHoliday, Holiday } from "@/lib/colombia-holidays"
 
-// --- TIPOS ---
 interface Evento {
     id: string
     titulo: string
     descripcion: string
-    fecha: Date
+    fecha: string // ISO string
     horaInicio: string
     horaFin: string
-    tipo: 'reunion' | 'entrega' | 'pago' | 'otro'
+    tipo: string
     color: string
     textColor: string
 }
 
 type ViewType = 'month' | 'week' | 'day' | 'year'
-
-// --- DATOS DE EJEMPLO ---
-const eventosIniciales: Evento[] = [
-    {
-        id: "1",
-        titulo: "Reunión de Equipo",
-        descripcion: "Revisión de objetivos mensuales",
-        fecha: new Date(),
-        horaInicio: "09:00",
-        horaFin: "10:30",
-        tipo: "reunion",
-        color: "bg-blue-500/20 border-l-4 border-blue-500",
-        textColor: "text-blue-700 dark:text-blue-300"
-    },
-    {
-        id: "2",
-        titulo: "Entrega de Proveedor",
-        descripcion: "Llegada de pedido #1234",
-        fecha: new Date(),
-        horaInicio: "14:00",
-        horaFin: "15:00",
-        tipo: "entrega",
-        color: "bg-emerald-500/20 border-l-4 border-emerald-500",
-        textColor: "text-emerald-700 dark:text-emerald-300"
-    },
-]
 
 const tiposEvento = [
     { value: "reunion", label: "Reunión", color: "bg-blue-500/20 border-l-4 border-blue-500", textColor: "text-blue-500" },
@@ -103,7 +68,7 @@ export default function CalendarioPage() {
     const [currentDate, setCurrentDate] = useState(new Date())
     const [view, setView] = useState<ViewType>('month')
     const [selectedDate, setSelectedDate] = useState(new Date())
-    const [eventos, setEventos] = useState<Evento[]>(eventosIniciales)
+    const [eventos, setEventos] = useState<Evento[]>([])
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [holidays, setHolidays] = useState<Holiday[]>([])
 
@@ -115,13 +80,21 @@ export default function CalendarioPage() {
         tipo: "reunion"
     })
 
-    // Cargar festivos al cambiar el año
+    const fetchEventos = async () => {
+        try {
+            const res = await fetch("http://localhost:8080/api/eventos")
+            if (res.ok) setEventos(await res.json());
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
     useEffect(() => {
         const year = getYear(currentDate);
         setHolidays(getColombiaHolidays(year));
+        fetchEventos();
     }, [currentDate]);
 
-    // --- NAVEGACIÓN ---
     const navigate = (direction: 'prev' | 'next') => {
         switch (view) {
             case 'year':
@@ -147,7 +120,6 @@ export default function CalendarioPage() {
         setSelectedDate(today)
     }
 
-    // --- GENERACIÓN DE DÍAS (MEMOIZED) ---
     const calendarDays = useMemo(() => {
         if (view === 'month') {
             const monthStart = startOfMonth(currentDate)
@@ -160,41 +132,56 @@ export default function CalendarioPage() {
             const end = endOfWeek(currentDate, { weekStartsOn: 1 })
             return eachDayOfInterval({ start, end })
         }
-        return [currentDate] // View day
+        return [currentDate]
     }, [currentDate, view])
 
-    // --- GESTIÓN DE EVENTOS ---
-    const handleCreateEvent = (e: React.FormEvent) => {
+    const handleCreateEvent = async (e: React.FormEvent) => {
         e.preventDefault()
         const tipoObj = tiposEvento.find(t => t.value === formData.tipo)
 
-        const nuevoEvento: Evento = {
-            id: crypto.randomUUID(),
+        const nuevoEvento = {
             titulo: formData.titulo,
             descripcion: formData.descripcion,
-            fecha: selectedDate,
+            fecha: format(selectedDate, 'yyyy-MM-dd'),
             horaInicio: formData.horaInicio,
             horaFin: formData.horaFin,
-            tipo: formData.tipo as any,
-            color: tipoObj?.color || "bg-gray-500",
-            textColor: tipoObj?.textColor || "text-gray-500"
+            tipo: formData.tipo,
+            color: tipoObj?.color,
+            textColor: tipoObj?.textColor
         }
 
-        setEventos([...eventos, nuevoEvento])
-        toast.success("Evento creado")
-        setIsModalOpen(false)
-        setFormData({ titulo: "", descripcion: "", horaInicio: "09:00", horaFin: "10:00", tipo: "reunion" })
+        try {
+            const res = await fetch("http://localhost:8080/api/eventos", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(nuevoEvento)
+            })
+            if (res.ok) {
+                toast.success("Evento creado")
+                setIsModalOpen(false)
+                setFormData({ titulo: "", descripcion: "", horaInicio: "09:00", horaFin: "10:00", tipo: "reunion" })
+                fetchEventos()
+            }
+        } catch (error) {
+            toast.error("Error al crear evento")
+        }
     }
 
-    const handleDeleteEvent = (id: string) => {
-        setEventos(eventos.filter(e => e.id !== id))
-        toast.success("Evento eliminado")
+    const handleDeleteEvent = async (id: string) => {
+        try {
+            const res = await fetch(`http://localhost:8080/api/eventos/${id}`, { method: "DELETE" })
+            if (res.ok) {
+                toast.success("Evento eliminado")
+                fetchEventos()
+            }
+        } catch (error) {
+            toast.error("Error al eliminar evento")
+        }
     }
 
-    const eventosDelDia = eventos.filter(e => isSameDay(e.fecha, selectedDate))
+    const eventosDelDia = eventos.filter(e => isSameDay(parseISO(e.fecha), selectedDate))
     const festivoDelDia = isHoliday(selectedDate, holidays);
 
-    // --- TÍTULO DINÁMICO ---
     const getTitle = () => {
         if (view === 'year') return format(currentDate, 'yyyy');
         if (view === 'day') return format(currentDate, 'd MMMM yyyy', { locale: es });
@@ -206,7 +193,6 @@ export default function CalendarioPage() {
         return format(currentDate, 'MMMM yyyy', { locale: es });
     }
 
-    // Componente MiniMonth para vista anual
     const MiniMonth = ({ monthIndex }: { monthIndex: number }) => {
         const monthDate = new Date(getYear(currentDate), monthIndex, 1);
         const monthStart = startOfMonth(monthDate);
@@ -225,7 +211,7 @@ export default function CalendarioPage() {
                         <div key={d} className="text-[9px] text-center text-muted-foreground font-medium p-0.5">{d}</div>
                     ))}
                     {days.map(day => {
-                        const dayEvents = eventos.filter(e => isSameDay(e.fecha, day));
+                        const dayEvents = eventos.filter(e => isSameDay(parseISO(e.fecha), day));
                         const holiday = isHoliday(day, holidays);
                         const isCurrentMonth = isSameMonth(day, monthDate);
 
@@ -260,36 +246,18 @@ export default function CalendarioPage() {
             <SidebarProvider>
                 <AppSidebar />
                 <SidebarInset>
-                    <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 sticky top-0 bg-background/80 backdrop-blur-md z-10">
-                        <SidebarTrigger className="-ml-1" />
-                        <Separator orientation="vertical" className="mr-2 h-4" />
-                        <Breadcrumb>
-                            <BreadcrumbList>
-                                <BreadcrumbItem>
-                                    <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
-                                </BreadcrumbItem>
-                                <BreadcrumbSeparator />
-                                <BreadcrumbItem>
-                                    <BreadcrumbPage>Calendario</BreadcrumbPage>
-                                </BreadcrumbItem>
-                            </BreadcrumbList>
-                        </Breadcrumb>
-                    </header>
+                    <DashboardHeader pageTitle="Calendario" />
 
                     <div className="flex flex-col lg:flex-row flex-1 h-[calc(100vh-4rem)] overflow-hidden">
 
-                        {/* --- PANEL PRINCIPAL --- */}
                         <div className="flex-1 flex flex-col p-4 lg:p-6 overflow-auto">
 
-                            {/* Controles */}
                             <div className="flex flex-col sm:flex-row items-center justify-between mb-6 gap-4">
 
                                 <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-start">
-                                    <div className="flex items-center gap-2">
-                                        <h1 className="text-2xl font-bold capitalize min-w-[200px]">
-                                            {getTitle()}
-                                        </h1>
-                                    </div>
+                                    <h1 className="text-2xl font-bold capitalize min-w-[200px]">
+                                        {getTitle()}
+                                    </h1>
 
                                     <div className="flex items-center bg-card border rounded-md shadow-sm">
                                         <Button variant="ghost" size="icon" onClick={() => navigate('prev')} className="h-8 w-8 rounded-l-md hover:bg-muted">
@@ -356,11 +324,9 @@ export default function CalendarioPage() {
                                 </div>
                             </div>
 
-                            {/* --- GRID DEL CALENDARIO --- */}
                             <div className="flex-1 bg-card rounded-xl border shadow-sm overflow-hidden flex flex-col min-h-[500px]">
 
                                 {view === 'year' ? (
-                                    // VISTA ANUAL - Grid de 12 meses
                                     <div className="p-6 overflow-auto">
                                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                                             {Array.from({ length: 12 }, (_, i) => (
@@ -370,7 +336,6 @@ export default function CalendarioPage() {
                                     </div>
                                 ) : (
                                     <>
-                                        {/* Cabecera Días (Solo visible en Mes y Semana) */}
                                         {view !== 'day' && (
                                             <div className="grid grid-cols-7 bg-muted/40 border-b">
                                                 {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(day => (
@@ -384,7 +349,6 @@ export default function CalendarioPage() {
                                         <div className={`flex-1 ${view === 'day' ? 'p-4' : 'grid grid-cols-7 auto-rows-fr'}`}>
 
                                             {view === 'day' ? (
-                                                // VISTA DIARIA
                                                 <div className="space-y-2 h-full">
                                                     {festivoDelDia && (
                                                         <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg flex items-center gap-3 text-amber-600 dark:text-amber-400">
@@ -395,27 +359,29 @@ export default function CalendarioPage() {
                                                             </div>
                                                         </div>
                                                     )}
-                                                    {eventos.filter(e => isSameDay(e.fecha, currentDate)).length === 0 ? (
+                                                    {eventos.filter(e => isSameDay(parseISO(e.fecha), currentDate)).length === 0 ? (
                                                         <div className="flex flex-col items-center justify-center h-full text-muted-foreground opacity-50">
                                                             <CalendarIcon className="h-16 w-16 mb-2" />
                                                             <p>No hay eventos para hoy</p>
                                                         </div>
                                                     ) : (
-                                                        eventos.filter(e => isSameDay(e.fecha, currentDate)).map(event => (
+                                                        eventos.filter(e => isSameDay(parseISO(e.fecha), currentDate)).map(event => (
                                                             <div key={event.id} className={`p-4 rounded-lg border ${event.color} mb-2 flex justify-between items-center`}>
                                                                 <div>
                                                                     <h3 className={`font-bold ${event.textColor}`}>{event.titulo}</h3>
                                                                     <p className="text-sm opacity-80">{event.horaInicio} - {event.horaFin}</p>
                                                                     <p className="text-sm mt-1">{event.descripcion}</p>
                                                                 </div>
+                                                                <Button variant="ghost" size="icon" onClick={() => handleDeleteEvent(event.id)}>
+                                                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                                                </Button>
                                                             </div>
                                                         ))
                                                     )}
                                                 </div>
                                             ) : (
-                                                // VISTA MES / SEMANA
                                                 calendarDays.map((day) => {
-                                                    const dayEvents = eventos.filter(e => isSameDay(e.fecha, day))
+                                                    const dayEvents = eventos.filter(e => isSameDay(parseISO(e.fecha), day))
                                                     const isCurrentMonth = isSameMonth(day, currentDate)
                                                     const isSelected = isSameDay(day, selectedDate)
                                                     const holiday = isHoliday(day, holidays)
@@ -451,7 +417,7 @@ export default function CalendarioPage() {
                                                                         key={event.id}
                                                                         className={`
                                     text-[10px] px-1.5 py-0.5 rounded-sm truncate font-medium border-l-2
-                                    ${event.color.split(' ')[0]} ${event.textColor} border-l-${event.textColor.split('-')[1]}
+                                    ${event.color} ${event.textColor}
                                 `}
                                                                         title={event.titulo}
                                                                     >
@@ -469,7 +435,6 @@ export default function CalendarioPage() {
                             </div>
                         </div>
 
-                        {/* --- PANEL LATERAL --- */}
                         <div className="w-full lg:w-80 border-l bg-muted/10 p-4 lg:p-6 overflow-y-auto">
                             <div className="mb-6">
                                 <h2 className="text-lg font-bold flex items-center gap-2 mb-1 text-foreground">
@@ -483,25 +448,12 @@ export default function CalendarioPage() {
                                 </p>
                             </div>
 
-                            {festivoDelDia && (
-                                <div className="mb-6 p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border border-amber-200 dark:border-amber-800 rounded-xl flex items-start gap-3">
-                                    <div className="p-2 bg-amber-100 dark:bg-amber-900 rounded-full text-amber-600 dark:text-amber-400 shrink-0">
-                                        <Flag className="h-5 w-5" />
-                                    </div>
-                                    <div>
-                                        <h4 className="text-sm font-bold text-amber-800 dark:text-amber-200">¡Es Festivo!</h4>
-                                        <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">{festivoDelDia.name}</p>
-                                        <p className="text-[10px] text-amber-600/70 mt-1">Horario especial podría aplicar</p>
-                                    </div>
-                                </div>
-                            )}
-
                             <div className="space-y-3">
                                 {eventosDelDia.map(evento => (
-                                    <Card key={evento.id} className="group hover:shadow-md transition-all border-l-4 border-l-primary overflow-hidden" style={{ borderLeftColor: evento.textColor === 'text-blue-500' ? '#3b82f6' : evento.textColor === 'text-emerald-500' ? '#10b981' : evento.textColor === 'text-red-500' ? '#ef4444' : '#a855f7' }}>
+                                    <Card key={evento.id} className={`group hover:shadow-md transition-all border-l-4 overflow-hidden ${evento.color}`}>
                                         <CardContent className="p-3">
                                             <div className="flex justify-between items-start mb-1">
-                                                <h3 className="font-semibold text-sm line-clamp-1">{evento.titulo}</h3>
+                                                <h3 className={`font-semibold text-sm line-clamp-1 ${evento.textColor}`}>{evento.titulo}</h3>
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
                                                         <Button variant="ghost" size="icon" className="h-6 w-6 -mr-2 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">

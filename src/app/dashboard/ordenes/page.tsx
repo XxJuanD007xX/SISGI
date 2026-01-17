@@ -2,19 +2,11 @@
 
 import React, { useState, useEffect } from "react"
 import { AppSidebar } from "@/app/components/app-sidebar"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
+import { DashboardHeader } from "@/app/components/dashboard-header";
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
-import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { ShoppingCart, Plus, Calendar, DollarSign, Search, Filter } from "lucide-react"
 import { OrdenCompra } from "@/app/components/types"
 import { OrdenCompraFormModal } from "@/app/components/orden-compra-form-modal"
@@ -64,17 +56,7 @@ export default function OrdenesPage() {
       <SidebarProvider>
         <AppSidebar />
         <SidebarInset>
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 h-4" />
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem><BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink></BreadcrumbItem>
-                <BreadcrumbSeparator />
-                <BreadcrumbItem><BreadcrumbPage>Órdenes de Compra</BreadcrumbPage></BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-          </header>
+          <DashboardHeader pageTitle="Órdenes de Compra" />
 
           <div className="flex flex-1 flex-col gap-4 p-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

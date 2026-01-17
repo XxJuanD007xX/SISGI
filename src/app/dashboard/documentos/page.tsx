@@ -1,21 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { AppSidebar } from "@/app/components/app-sidebar"
-import { DocumentUploadModal, DriveItem } from "@/app/components/DocumentUploadModal"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
+import { DocumentUploadModal } from "@/app/components/DocumentUploadModal"
+import { DashboardHeader } from "@/app/components/dashboard-header";
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Separator } from "@/components/ui/separator"
-import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import {
   Search,
   Folder,
@@ -30,7 +22,8 @@ import {
   FileSpreadsheet,
   FileIcon,
   Presentation,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Video as VideoIcon
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -43,34 +36,49 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import React from "react"
-
-// Datos iniciales con archivos en raíz y en carpetas
-const initialItems: DriveItem[] = [
-  // Carpetas
-  { id: "folder-1", parentId: null, name: "Manuales y Guías", type: "folder", color: "text-blue-500", createdAt: "01/01/2024", updatedAt: "01/01/2024", author: "Admin" },
-  { id: "folder-2", parentId: null, name: "Legal", type: "folder", color: "text-emerald-500", createdAt: "01/01/2024", updatedAt: "05/01/2024", author: "Legal" },
-  { id: "folder-3", parentId: null, name: "Marketing", type: "folder", color: "text-purple-500", createdAt: "01/02/2024", updatedAt: "01/02/2024", author: "Mkt Team" },
-
-  // Archivos sueltos en raíz (Dashboard/Documentos)
-  { id: "doc-root-1", parentId: null, name: "Reporte Anual 2024.xlsx", type: "file", fileType: "xlsx", category: "general", size: "1.2 MB", createdAt: "10/02/2024", updatedAt: "10/02/2024", author: "Finanzas" },
-  { id: "doc-root-2", parentId: null, name: "Presentación Corporativa.pptx", type: "file", fileType: "pptx", category: "marketing", size: "5.8 MB", createdAt: "12/02/2024", updatedAt: "12/02/2024", author: "Gerencia" },
-
-  // Contenido dentro de carpetas
-  { id: "doc-1", parentId: "folder-1", name: "Manual de Usuario v2.pdf", type: "file", fileType: "pdf", category: "manuales", size: "2.4 MB", createdAt: "15/01/2024", updatedAt: "15/01/2024", author: "Dev Team" },
-  { id: "vid-1", parentId: "folder-1", name: "Tutorial: Registro de Productos", type: "video", url: "https://youtube.com", createdAt: "20/01/2024", updatedAt: "20/01/2024", author: "Soporte" },
-]
+import { Carpeta, Documento } from "@/app/components/types"
 
 export default function DocumentosPage() {
-  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null)
-  const [folderHistory, setFolderHistory] = useState<{ id: string, name: string }[]>([])
-  const [items, setItems] = useState<DriveItem[]>(initialItems)
+  const [currentFolderId, setCurrentFolderId] = useState<number | null>(null)
+  const [folderHistory, setFolderHistory] = useState<{ id: number, name: string }[]>([])
+  const [folders, setFolders] = useState<Carpeta[]>([])
+  const [documents, setDocuments] = useState<Documento[]>([])
   const [searchTerm, setSearchTerm] = useState("")
+  const [isPlaylistView, setIsPlaylistView] = useState(false)
 
-  // --- NAVEGACIÓN ---
-  const enterFolder = (folderId: string, folderName: string) => {
+  const fetchData = async () => {
+    try {
+      if (isPlaylistView) {
+        const resDocs = await fetch(`http://localhost:8080/api/documentos/playlist`);
+        if (resDocs.ok) setDocuments(await resDocs.json());
+        setFolders([]);
+        return;
+      }
+
+      const folderUrl = `http://localhost:8080/api/documentos/carpetas${currentFolderId ? `?parentId=${currentFolderId}` : ""}`;
+      const docUrl = `http://localhost:8080/api/documentos${currentFolderId ? `?carpetaId=${currentFolderId}` : ""}`;
+
+      const [resFolders, resDocs] = await Promise.all([
+        fetch(folderUrl),
+        fetch(docUrl)
+      ]);
+
+      if (resFolders.ok) setFolders(await resFolders.json());
+      if (resDocs.ok) setDocuments(await resDocs.json());
+    } catch (error) {
+      console.error("Error al cargar datos:", error);
+    }
+  }
+
+  useEffect(() => {
+    fetchData()
+  }, [currentFolderId, isPlaylistView])
+
+  const enterFolder = (folderId: number, folderName: string) => {
     setFolderHistory([...folderHistory, { id: folderId, name: folderName }])
     setCurrentFolderId(folderId)
     setSearchTerm("")
+    setIsPlaylistView(false)
   }
 
   const navigateUp = () => {
@@ -90,22 +98,37 @@ export default function DocumentosPage() {
       setFolderHistory(newHistory);
       setCurrentFolderId(newHistory[newHistory.length - 1].id);
     }
+    setIsPlaylistView(false)
   }
 
-  const handleNewItem = (item: DriveItem) => {
-    setItems(prev => [item, ...prev])
+  const handleDeleteFolder = async (id: number) => {
+    try {
+      const res = await fetch(`http://localhost:8080/api/documentos/carpetas/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("Carpeta eliminada");
+        fetchData();
+      }
+    } catch (error) {
+      toast.error("Error al eliminar carpeta");
+    }
   }
 
-  const handleDelete = (id: string) => {
-    setItems(prev => prev.filter(item => item.id !== id));
-    toast.success("Elemento eliminado");
+  const handleDeleteDocument = async (id: number) => {
+    try {
+      const res = await fetch(`http://localhost:8080/api/documentos/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("Documento eliminado");
+        fetchData();
+      }
+    } catch (error) {
+      toast.error("Error al eliminar documento");
+    }
   }
 
-  // --- RENDERIZADO DE ICONOS ---
-  const getFileIcon = (fileType?: string, type?: string) => {
-    if (type === 'video') return <PlayCircle className="h-9 w-9 text-red-600" />;
+  const getFileIcon = (doc: Documento) => {
+    if (doc.tipo === 'video') return <PlayCircle className="h-9 w-9 text-red-600" />;
 
-    switch (fileType?.toLowerCase()) {
+    switch (doc.extension?.toLowerCase()) {
       case 'pdf': return <FileText className="h-9 w-9 text-red-500" />;
       case 'xls':
       case 'xlsx':
@@ -121,15 +144,6 @@ export default function DocumentosPage() {
     }
   }
 
-  const displayedItems = items.filter(item => {
-    if (searchTerm) return item.name.toLowerCase().includes(searchTerm.toLowerCase());
-    return item.parentId === currentFolderId;
-  });
-
-  const folders = displayedItems.filter(i => i.type === 'folder');
-  const files = displayedItems.filter(i => i.type !== 'folder');
-
-  // Mapeo de colores para carpetas (borde principal, fondo suave)
   const getColorClasses = (colorName: string | undefined) => {
     const colorMap: Record<string, { border: string; icon: string; bg: string }> = {
       'text-blue-500': { border: 'border-blue-500/60', icon: 'text-blue-500/80', bg: 'bg-blue-50/50 dark:bg-blue-950/20' },
@@ -142,73 +156,17 @@ export default function DocumentosPage() {
     return colorMap[colorName || 'text-blue-500'] || colorMap['text-blue-500'];
   }
 
-  // Obtener badge de categoría
-  const getCategoryBadge = (category?: string, type?: string) => {
-    if (type === 'video') return { label: 'Video', color: 'bg-red-500/10 text-red-600 border-red-200/50' };
-
-    const categoryMap: Record<string, { label: string; color: string }> = {
-      'general': { label: 'General', color: 'bg-slate-500/10 text-slate-600 border-slate-200/50' },
-      'manuales': { label: 'Manual', color: 'bg-blue-500/10 text-blue-600 border-blue-200/50' },
-      'tecnica': { label: 'Técnica', color: 'bg-purple-500/10 text-purple-600 border-purple-200/50' },
-      'legal': { label: 'Legal', color: 'bg-amber-500/10 text-amber-600 border-amber-200/50' },
-      'marketing': { label: 'Marketing', color: 'bg-pink-500/10 text-pink-600 border-pink-200/50' },
-    };
-    return categoryMap[category || 'general'] || categoryMap['general'];
-  }
+  const filteredFolders = folders.filter(f => f.nombre.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredDocs = documents.filter(d => d.nombre.toLowerCase().includes(searchTerm.toLowerCase()));
 
   return (
     <div className="dark">
       <SidebarProvider>
         <AppSidebar />
         <SidebarInset>
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 h-4" />
-
-            {/* --- BREADCRUMBS --- */}
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem>
-                  <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator />
-
-                <BreadcrumbItem>
-                  {currentFolderId === null ? (
-                    <BreadcrumbPage>Documentos</BreadcrumbPage>
-                  ) : (
-                    <button
-                      onClick={() => navigateToBreadcrumb(-1)}
-                      className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-                    >
-                      Documentos
-                    </button>
-                  )}
-                </BreadcrumbItem>
-
-                {folderHistory.map((folder, index) => (
-                  <React.Fragment key={folder.id}>
-                    <BreadcrumbSeparator />
-                    <BreadcrumbItem>
-                      {index === folderHistory.length - 1 ? (
-                        <BreadcrumbPage>{folder.name}</BreadcrumbPage>
-                      ) : (
-                        <button
-                          onClick={() => navigateToBreadcrumb(index)}
-                          className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-                        >
-                          {folder.name}
-                        </button>
-                      )}
-                    </BreadcrumbItem>
-                  </React.Fragment>
-                ))}
-              </BreadcrumbList>
-            </Breadcrumb>
-          </header>
+          <DashboardHeader pageTitle="Repositorio de Documentos" />
 
           <div className="flex flex-1 flex-col gap-4 p-4">
-
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-muted/30 p-2 rounded-lg border">
               <div className="flex items-center gap-2 w-full sm:w-auto">
                 {currentFolderId && (
@@ -219,7 +177,7 @@ export default function DocumentosPage() {
                 <div className="relative w-full sm:w-80">
                   <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder={`Buscar en ${currentFolderId ? 'esta carpeta' : 'Documentos'}...`}
+                    placeholder={`Buscar...`}
                     className="pl-8 bg-background"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -227,49 +185,61 @@ export default function DocumentosPage() {
                 </div>
               </div>
 
-              <DocumentUploadModal currentFolderId={currentFolderId} onUpload={handleNewItem}>
-                <Button className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm">
-                  <Plus className="h-5 w-5 mr-2" /> Nuevo
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={isPlaylistView ? "default" : "outline"}
+                  onClick={() => setIsPlaylistView(!isPlaylistView)}
+                  className="gap-2"
+                >
+                  <VideoIcon className="h-4 w-4" /> Playlist
                 </Button>
-              </DocumentUploadModal>
+                <DocumentUploadModal currentFolderId={currentFolderId} onSuccess={fetchData}>
+                  <Button className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm">
+                    <Plus className="h-5 w-5 mr-2" /> Nuevo
+                  </Button>
+                </DocumentUploadModal>
+              </div>
             </div>
 
             <div className="flex-1 min-h-[500px]">
-
-              {displayedItems.length === 0 ? (
+              {(filteredFolders.length === 0 && filteredDocs.length === 0) ? (
                 <div className="flex flex-col items-center justify-center h-full text-muted-foreground border-2 border-dashed rounded-xl p-10">
                   <Folder className="h-16 w-16 mb-4 opacity-20" />
-                  <p className="text-lg font-medium">Carpeta vacía</p>
-                  <p className="text-sm">Usa el botón "Nuevo" para agregar contenido</p>
+                  <p className="text-lg font-medium">No se encontraron elementos</p>
                 </div>
               ) : (
                 <div className="space-y-8">
-
-                  {/* --- CARPETAS --- */}
-                  {folders.length > 0 && (
+                  {filteredFolders.length > 0 && (
                     <div>
                       <h3 className="text-sm font-semibold text-muted-foreground mb-4 flex items-center gap-2">
                         <Folder className="h-4 w-4" /> Carpetas
                       </h3>
                       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                        {folders.map(folder => {
+                        {filteredFolders.map(folder => {
                           const style = getColorClasses(folder.color);
                           return (
                             <div
                               key={folder.id}
                               className={`group relative flex flex-col items-center p-5 rounded-xl border-2 cursor-pointer transition-all hover:shadow-lg hover:-translate-y-1 ${style.border} ${style.bg}`}
-                              onClick={() => enterFolder(folder.id, folder.name)}
+                              onClick={() => enterFolder(folder.id!, folder.nombre)}
                             >
                               <div className="mb-3 transition-transform group-hover:scale-110 duration-200">
                                 <Folder className={`h-16 w-16 ${style.icon} fill-current`} />
                               </div>
                               <span className="text-sm font-semibold text-center truncate w-full px-2">
-                                {folder.name}
+                                {folder.nombre}
                               </span>
-                              <span className="text-[11px] text-muted-foreground mt-1.5">{folder.createdAt}</span>
-
                               <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
-                                <ItemMenu item={folder} onDelete={handleDelete} />
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full"><MoreVertical className="h-4 w-4" /></Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteFolder(folder.id!)}>
+                                      <Trash2 className="mr-2 h-4 w-4" /> Eliminar
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
                               </div>
                             </div>
                           )
@@ -278,65 +248,48 @@ export default function DocumentosPage() {
                     </div>
                   )}
 
-                  {/* --- ARCHIVOS --- */}
-                  {files.length > 0 && (
+                  {filteredDocs.length > 0 && (
                     <div>
                       <h3 className="text-sm font-semibold text-muted-foreground mb-4 mt-6 flex items-center gap-2">
                         <FileText className="h-4 w-4" /> Archivos
                       </h3>
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        {files.map(file => {
-                          const categoryBadge = getCategoryBadge(file.category, file.type);
-                          return (
-                            <Card key={file.id} className="group hover:border-primary/50 transition-all hover:shadow-lg">
-                              <CardContent className="p-0 flex flex-col h-full">
-                                {/* Header con icono y menú */}
-                                <div className="flex items-center justify-between p-4 pb-3 border-b bg-muted/30">
-                                  <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-background rounded-lg shadow-sm">
-                                      {getFileIcon(file.fileType, file.type)}
-                                    </div>
-                                    <Badge variant="outline" className={`text-[10px] font-semibold px-2 py-0.5 ${categoryBadge.color}`}>
-                                      {categoryBadge.label}
-                                    </Badge>
+                        {filteredDocs.map(doc => (
+                          <Card key={doc.id} className="group hover:border-primary/50 transition-all hover:shadow-lg">
+                            <CardContent className="p-0 flex flex-col h-full">
+                              <div className="flex items-center justify-between p-4 pb-3 border-b bg-muted/30">
+                                <div className="flex items-center gap-3">
+                                  <div className="p-2 bg-background rounded-lg shadow-sm">
+                                    {getFileIcon(doc)}
                                   </div>
-                                  <div className="opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
-                                    <ItemMenu item={file} onDelete={handleDelete} />
-                                  </div>
+                                  <Badge variant="outline" className="text-[10px] uppercase">{doc.tipo}</Badge>
                                 </div>
-
-                                {/* Contenido */}
-                                <div className="flex-1 p-4 pt-3">
-                                  <p className="font-semibold text-sm mb-3 truncate" title={file.name}>{file.name}</p>
-
-                                  <div className="space-y-2 text-xs">
-                                    <div className="flex items-center justify-between text-muted-foreground">
-                                      <span className="flex items-center gap-1.5">
-                                        <div className="h-1 w-1 rounded-full bg-muted-foreground"></div>
-                                        Tamaño
-                                      </span>
-                                      <span className="font-medium text-foreground">{file.size || "N/A"}</span>
-                                    </div>
-                                    <div className="flex items-center justify-between text-muted-foreground">
-                                      <span className="flex items-center gap-1.5">
-                                        <div className="h-1 w-1 rounded-full bg-muted-foreground"></div>
-                                        Fecha
-                                      </span>
-                                      <span className="font-medium text-foreground">{file.createdAt}</span>
-                                    </div>
-                                    <div className="flex items-center justify-between text-muted-foreground">
-                                      <span className="flex items-center gap-1.5">
-                                        <div className="h-1 w-1 rounded-full bg-muted-foreground"></div>
-                                        Autor
-                                      </span>
-                                      <span className="font-medium text-foreground truncate max-w-[120px]">{file.author}</span>
-                                    </div>
-                                  </div>
+                                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full"><MoreVertical className="h-4 w-4" /></Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem onClick={() => window.open(`http://localhost:8080/api/documentos/download/${doc.id}`, '_blank')}>
+                                        <Download className="mr-2 h-4 w-4" /> Descargar
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteDocument(doc.id!)}>
+                                        <Trash2 className="mr-2 h-4 w-4" /> Eliminar
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
                                 </div>
-                              </CardContent>
-                            </Card>
-                          )
-                        })}
+                              </div>
+                              <div className="flex-1 p-4 pt-3">
+                                <p className="font-semibold text-sm mb-3 truncate" title={doc.nombre}>{doc.nombre}</p>
+                                <div className="space-y-2 text-xs text-muted-foreground">
+                                  <div className="flex justify-between"><span>Tamaño</span><span className="text-foreground">{doc.size}</span></div>
+                                  <div className="flex justify-between"><span>Autor</span><span className="text-foreground truncate max-w-[100px]">{doc.autor}</span></div>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
                       </div>
                     </div>
                   )}
@@ -347,44 +300,5 @@ export default function DocumentosPage() {
         </SidebarInset>
       </SidebarProvider>
     </div>
-  )
-}
-
-function ItemMenu({ item, onDelete }: { item: DriveItem, onDelete: (id: string) => void }) {
-  const handleAction = (action: string) => {
-    if (action === 'open') {
-      if (item.type === 'video' && item.url) {
-        window.open(item.url, '_blank');
-      } else {
-        toast.info(`Abriendo ${item.name}...`);
-      }
-    }
-  }
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-muted">
-          <MoreVertical className="h-4 w-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => handleAction('open')}>
-          {item.type === 'video' ? <ExternalLink className="mr-2 h-4 w-4" /> : <FileText className="mr-2 h-4 w-4" />}
-          Abrir / Ver
-        </DropdownMenuItem>
-        {item.type === 'file' && (
-          <DropdownMenuItem onClick={() => toast.success("Descargando...")}>
-            <Download className="mr-2 h-4 w-4" /> Descargar
-          </DropdownMenuItem>
-        )}
-        <DropdownMenuSeparator />
-        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDelete(item.id)}>
-          <Trash2 className="mr-2 h-4 w-4" /> Eliminar
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
   )
 }

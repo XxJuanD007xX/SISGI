@@ -17,27 +17,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { Upload, Youtube, FolderPlus, FilePlus, Link as LinkIcon, Check, FileText } from "lucide-react"
 import { toast } from "sonner"
-
-// Estructura unificada para cualquier elemento del Drive
-export interface DriveItem {
-    id: string
-    parentId: string | null
-    name: string
-    type: 'file' | 'folder' | 'video'
-    fileType?: string // Para iconos específicos (pdf, xls, doc, etc)
-    description?: string
-    url?: string // Para videos
-    size?: string // Para archivos
-    category?: string
-    color?: string // Nuevo: Para carpetas personalizadas
-    createdAt: string
-    updatedAt: string
-    author: string
-}
+import { useUser } from "@clerk/nextjs"
 
 interface DocumentUploadModalProps {
-    currentFolderId: string | null
-    onUpload: (item: DriveItem) => void
+    currentFolderId: number | null
+    onSuccess: () => void
     children: React.ReactNode
 }
 
@@ -50,7 +34,8 @@ const folderColors = [
     { name: "pink", value: "text-pink-500", bg: "bg-pink-500", label: "Rosa" },
 ]
 
-export function DocumentUploadModal({ currentFolderId, onUpload, children }: DocumentUploadModalProps) {
+export function DocumentUploadModal({ currentFolderId, onSuccess, children }: DocumentUploadModalProps) {
+    const { user } = useUser()
     const [open, setOpen] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
     const [activeTab, setActiveTab] = useState<'file' | 'video' | 'folder'>('file')
@@ -90,35 +75,52 @@ export function DocumentUploadModal({ currentFolderId, onUpload, children }: Doc
         if (!formData.name) return toast.error("El nombre es obligatorio.");
 
         setIsLoading(true)
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        const author = user?.fullName || user?.username || "Usuario"
 
-        // Determinar extensión para iconos
-        let fileType = 'generic';
-        if (activeTab === 'file' && formData.file) {
-            const ext = formData.file.name.split('.').pop()?.toLowerCase();
-            if (ext) fileType = ext;
+        try {
+            if (activeTab === 'folder') {
+                const res = await fetch("http://localhost:8080/api/documentos/carpetas", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        nombre: formData.name,
+                        color: folderColors.find(c => c.name === selectedColor)?.value,
+                        autor: author,
+                        parentId: currentFolderId
+                    })
+                })
+                if (!res.ok) throw new Error()
+                toast.success("Carpeta creada correctamente")
+            } else {
+                // Upload file or video (for now we handle videos as documents with URL)
+                // If it's a video file, it's a file. If it's a Youtube link, we might need another approach.
+                // In this implementation, let's assume 'video' tab is for links.
+
+                if (activeTab === 'file') {
+                    const data = new FormData()
+                    data.append("file", formData.file!)
+                    data.append("autor", author)
+                    if (currentFolderId) data.append("carpetaId", currentFolderId.toString())
+
+                    const res = await fetch("http://localhost:8080/api/documentos/upload", {
+                        method: "POST",
+                        body: data
+                    })
+                    if (!res.ok) throw new Error()
+                    toast.success("Archivo subido correctamente")
+                } else {
+                    // Manual entry for video link? Let's keep it simple for now or extend backend
+                    // For now, let's just do file upload.
+                    toast.info("Funcionalidad de enlaces de video en desarrollo")
+                }
+            }
+            onSuccess()
+            setOpen(false)
+        } catch (error) {
+            toast.error("Error al procesar la solicitud")
+        } finally {
+            setIsLoading(false)
         }
-
-        const newItem: DriveItem = {
-            id: crypto.randomUUID(),
-            parentId: currentFolderId,
-            name: formData.name,
-            description: formData.description,
-            type: activeTab,
-            fileType: fileType,
-            category: formData.category,
-            url: formData.url,
-            color: activeTab === 'folder' ? folderColors.find(c => c.name === selectedColor)?.value : undefined,
-            size: formData.file ? `${(formData.file.size / 1024 / 1024).toFixed(2)} MB` : undefined,
-            createdAt: new Date().toLocaleDateString('es-ES'),
-            updatedAt: new Date().toLocaleDateString('es-ES'),
-            author: "Usuario Actual"
-        };
-
-        onUpload(newItem);
-        toast.success(`${activeTab === 'folder' ? 'Carpeta creada' : 'Elemento agregado'} correctamente`);
-        setOpen(false)
-        setIsLoading(false)
     }
 
     return (

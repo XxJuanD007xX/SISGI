@@ -12,10 +12,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { Users, UserCheck, Shield, ExternalLink } from "lucide-react"
+import { Users, UserCheck, Shield, ExternalLink, Calendar } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { clerkClient } from "@clerk/nextjs/server"
 import Link from 'next/link'
+import { ThemeSwitcher } from "@/app/components/theme-switcher"
+import { NotificationBell } from "@/app/components/notification-bell"
 import type { User } from "@clerk/nextjs/server"; 
 
 // Definimos explícitamente el tipo para un usuario de Clerk para mejorar la autocompletado y seguridad de tipos.
@@ -64,20 +66,30 @@ export default async function UsuariosPage() {
       <SidebarProvider>
         <AppSidebar />
         <SidebarInset>
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 sticky top-0 bg-background/80 backdrop-blur-md z-50 transition-all w-full">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
             <Breadcrumb>
                <BreadcrumbList>
-                <BreadcrumbItem>
-                  <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
+                <BreadcrumbItem className="hidden md:block">
+                  <BreadcrumbLink href="/dashboard">SISGI</BreadcrumbLink>
                 </BreadcrumbItem>
-                <BreadcrumbSeparator />
+                <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem>
                   <BreadcrumbPage>Gestión de Usuarios</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
+            <div className="ml-auto flex items-center gap-3">
+              <ThemeSwitcher />
+              <NotificationBell />
+              <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 border border-border/50 text-xs font-medium">
+                <Calendar className="w-3.5 h-3.5 text-primary" />
+                <span className="capitalize">
+                  {new Date().toLocaleDateString("es-ES", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+                </span>
+              </div>
+            </div>
           </header>
 
           <div className="flex flex-1 flex-col gap-4 p-4">
