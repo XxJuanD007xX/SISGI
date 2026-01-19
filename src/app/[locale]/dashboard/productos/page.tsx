@@ -9,8 +9,8 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { Package, Plus, Search, AlertTriangle, TrendingUp, DollarSign } from "lucide-react"
-import { ProductFormModal } from "../../components/product-form-modal";
-import { ProductDrawer } from "../../components/product-drawer"
+import { ProductFormModal } from "@/app/components/product-form-modal";
+import { ProductDrawer } from "@/app/components/product-drawer"
 import { Product } from "@/app/components/types"
 
 import { useEffect, useState } from "react"

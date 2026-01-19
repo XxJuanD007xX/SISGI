@@ -222,6 +222,11 @@ public class EntityMapper {
         if (carpeta.getParent() != null) {
             dto.setParentId(carpeta.getParent().getId());
         }
+        if (carpeta.getSubcarpetas() != null && !carpeta.getSubcarpetas().isEmpty()) {
+            dto.setSubcarpetas(carpeta.getSubcarpetas().stream()
+                    .map(this::toDTO)
+                    .collect(Collectors.toList()));
+        }
         return dto;
     }
 

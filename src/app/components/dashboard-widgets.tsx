@@ -17,14 +17,20 @@ import {
   ShoppingBag,
   PlusCircle,
   FileBarChart,
-  Activity
+  Activity,
+  Megaphone,
+  ArrowRight,
+  Clock,
+  ShieldAlert
 } from "lucide-react"
-import Link from "next/link"
+import { Link } from "@/i18n/routing"
+import { useTranslations } from "next-intl"
 
 // --- COMPONENTE DE TARJETAS DE ESTADÍSTICAS (STATS CARDS) ---
 export function StatsCards() {
   const [stats, setStats] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const t = useTranslations("Dashboard.stats")
 
   useEffect(() => {
     fetch("http://localhost:8080/api/reportes/dashboard-stats")
@@ -36,7 +42,7 @@ export function StatsCards() {
 
   const cards = [
     {
-      title: "Productos",
+      title: t("products"),
       value: stats?.totalProductos || 0,
       icon: Package,
       color: "text-blue-500",
@@ -44,7 +50,7 @@ export function StatsCards() {
       desc: "En catálogo"
     },
     {
-      title: "Valor Inventario",
+      title: t("inventoryValue"),
       value: `$${(stats?.valorInventario || 0).toLocaleString()}`,
       icon: DollarSign,
       color: "text-emerald-500",
@@ -52,7 +58,7 @@ export function StatsCards() {
       desc: "Activos totales"
     },
     {
-      title: "Proveedores",
+      title: t("suppliers"),
       value: stats?.totalProveedores || 0,
       icon: Truck,
       color: "text-purple-500",
@@ -60,7 +66,7 @@ export function StatsCards() {
       desc: "Socios registrados"
     },
     {
-      title: "Pedidos Pendientes",
+      title: t("pendingOrders"),
       value: stats?.ordenesPendientes || 0,
       icon: AlertTriangle,
       color: stats?.ordenesPendientes > 0 ? "text-orange-500" : "text-muted-foreground",
@@ -78,11 +84,11 @@ export function StatsCards() {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       {cards.map((stat, index) => (
-        <Card key={index} className="border-none shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden relative">
+        <Card key={index} className="border-none shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden relative group">
           <div className="absolute inset-0 bg-gradient-to-br from-muted/20 to-transparent pointer-events-none" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
             <CardTitle className="text-sm font-medium text-muted-foreground">{stat.title}</CardTitle>
-            <div className={`p-2 rounded-full ${stat.bg}`}>
+            <div className={`p-2 rounded-full ${stat.bg} group-hover:scale-110 transition-transform`}>
               <stat.icon className={`h-4 w-4 ${stat.color}`} />
             </div>
           </CardHeader>
@@ -115,7 +121,7 @@ export function QuickActions() {
       <CardContent className="relative z-10">
         <div className="grid grid-cols-2 gap-3">
           {actions.map((action, index) => (
-            <Link href={action.href} key={index} className="block">
+            <Link href={action.href as any} key={index} className="block">
               <div className={`group relative overflow-hidden rounded-xl p-4 transition-all hover:scale-[1.02] cursor-pointer border border-border/50 hover:border-transparent`}>
                 <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity bg-gradient-to-br ${action.gradient}`} />
                 <div className="flex flex-col items-center gap-2 text-center">
@@ -158,7 +164,7 @@ export function RecentActivity() {
           <Activity className="h-5 w-5 text-primary" />
           <CardTitle>Actividad Reciente</CardTitle>
         </div>
-        <CardDescription>Movimientos en tiempo real del sistema</CardDescription>
+        <CardDescription>Movimientos en tiempo real</CardDescription>
       </CardHeader>
       <CardContent className="relative z-10">
         <div className="space-y-6">
@@ -193,38 +199,96 @@ export function RecentActivity() {
   )
 }
 
-// --- ALERTA DE STOCK CRÍTICO (Reutilizada pero mejorada visualmente) ---
+// --- ALERTA DE STOCK CRÍTICO (EXTREME REDESIGN) ---
 export function AlertsPanel({ lowStockProducts }: { lowStockProducts: any[] }) {
   if (lowStockProducts.length === 0) return null;
 
   return (
-    <Card className="border-l-4 border-l-red-500 shadow-md bg-red-50/50 dark:bg-red-950/10">
-      <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-2 text-red-600 dark:text-red-400 text-base">
-          <Bell className="h-5 w-5 animate-pulse" />
-          Atención Requerida
+    <Card className="border-none shadow-2xl overflow-hidden bg-white dark:bg-zinc-950 relative">
+      <div className="absolute top-0 left-0 w-1 h-full bg-red-600" />
+      <div className="absolute top-0 right-0 p-4">
+        <div className="h-10 w-10 rounded-full bg-red-500/10 flex items-center justify-center animate-pulse">
+            <ShieldAlert className="h-6 w-6 text-red-600" />
+        </div>
+      </div>
+      <CardHeader>
+        <CardTitle className="text-red-600 dark:text-red-500 flex items-center gap-2 text-xl font-black italic uppercase tracking-tighter">
+          <AlertTriangle className="h-6 w-6" /> Stock Crítico
         </CardTitle>
+        <CardDescription className="text-red-900/60 dark:text-red-400/60 font-medium">
+          Se requiere reposición inmediata de {lowStockProducts.length} ítems.
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-2">
-          <p className="text-sm text-muted-foreground">
-            Hay <strong>{lowStockProducts.length} productos</strong> con stock crítico.
-          </p>
-          <div className="flex flex-wrap gap-2 mt-2">
-            {lowStockProducts.slice(0, 3).map((p: any) => (
-              <span key={p.id} className="px-2 py-1 text-xs rounded-md bg-background border text-red-500 font-medium">
-                {p.nombre} ({p.stock})
-              </span>
-            ))}
-            {lowStockProducts.length > 3 && (
-              <span className="px-2 py-1 text-xs text-muted-foreground">+{lowStockProducts.length - 3} más</span>
-            )}
-          </div>
-          <Button variant="link" size="sm" className="px-0 text-red-500 h-auto mt-2" asChild>
-            <Link href="/dashboard/productos">Gestionar Inventario &rarr;</Link>
+        <div className="space-y-3">
+          {lowStockProducts.slice(0, 4).map((p: any) => (
+            <div key={p.id} className="flex items-center justify-between p-3 rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 group hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors">
+                <div className="flex flex-col">
+                    <span className="text-sm font-bold text-red-950 dark:text-red-100">{p.nombre}</span>
+                    <span className="text-[10px] uppercase tracking-wider text-red-600/70 dark:text-red-400/70 font-black">Mínimo: {p.stockMinimo}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                    <div className="text-right">
+                        <span className="text-xl font-black text-red-600 dark:text-red-500">{p.stock}</span>
+                        <span className="text-[10px] block text-red-900/40 dark:text-red-400/40 font-bold uppercase">Unidades</span>
+                    </div>
+                    <Link href="/dashboard/ordenes" className="p-2 rounded-lg bg-red-600 text-white opacity-0 group-hover:opacity-100 transition-opacity shadow-lg shadow-red-600/20">
+                        <PlusCircle className="h-4 w-4" />
+                    </Link>
+                </div>
+            </div>
+          ))}
+
+          <Button variant="ghost" className="w-full mt-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 font-bold gap-2" asChild>
+            <Link href="/dashboard/productos">Ver todo el inventario <ArrowRight className="h-4 w-4" /></Link>
           </Button>
         </div>
       </CardContent>
     </Card>
   )
+}
+
+// --- WIDGET DE ANUNCIOS RECIENTES ---
+export function AnnouncementsWidget() {
+    const [announcements, setAnnouncements] = useState<any[]>([])
+    const [loading, setLoading] = useState(true)
+
+    useEffect(() => {
+        fetch("http://localhost:8080/api/anuncios")
+            .then(res => res.ok ? res.json() : [])
+            .then(data => setAnnouncements(data.slice(0, 3)))
+            .catch(console.error)
+            .finally(() => setLoading(false))
+    }, [])
+
+    if (loading) return <Skeleton className="h-[200px] w-full rounded-xl" />
+
+    return (
+        <Card className="border-none shadow-lg bg-gradient-to-br from-indigo-500/5 to-purple-500/5">
+            <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
+                    <Megaphone className="h-5 w-5" /> Comunicados
+                </CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="space-y-4">
+                    {announcements.length === 0 ? (
+                        <p className="text-xs text-muted-foreground text-center">No hay anuncios</p>
+                    ) : announcements.map((a: any) => (
+                        <div key={a.id} className="border-l-2 border-indigo-200 dark:border-indigo-900 pl-3 py-1">
+                            <p className="text-xs font-bold text-indigo-950 dark:text-indigo-100 line-clamp-1">{a.titulo || 'Nuevo Aviso'}</p>
+                            <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{a.contenido}</p>
+                            <div className="flex items-center gap-2 mt-2">
+                                <Clock className="h-3 w-3 text-muted-foreground" />
+                                <span className="text-[10px] text-muted-foreground">{new Date(a.fechaCreacion).toLocaleDateString()}</span>
+                            </div>
+                        </div>
+                    ))}
+                    <Link href="/dashboard/anuncios" className="text-[10px] font-bold uppercase tracking-widest text-indigo-600 hover:text-indigo-500 flex items-center gap-1 mt-2">
+                        Tablón de anuncios <ArrowRight className="h-3 w-3" />
+                    </Link>
+                </div>
+            </CardContent>
+        </Card>
+    )
 }

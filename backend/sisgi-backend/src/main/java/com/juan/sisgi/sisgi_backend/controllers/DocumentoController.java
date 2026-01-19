@@ -44,6 +44,13 @@ public class DocumentoController {
         return carpetas.stream().map(entityMapper::toDTO).collect(Collectors.toList());
     }
 
+    @GetMapping("/carpetas/tree")
+    public List<CarpetaDTO> getCarpetaTree() {
+        return carpetaRepository.findByParentIsNull().stream()
+            .map(entityMapper::toDTO)
+            .collect(Collectors.toList());
+    }
+
     @PostMapping("/carpetas")
     public CarpetaDTO createCarpeta(@RequestBody CarpetaDTO dto) {
         Carpeta carpeta = entityMapper.toEntity(dto);

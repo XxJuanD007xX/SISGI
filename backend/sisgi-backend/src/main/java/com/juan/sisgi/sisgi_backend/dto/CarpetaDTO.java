@@ -2,6 +2,7 @@ package com.juan.sisgi.sisgi_backend.dto;
 
 import lombok.Data;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 public class CarpetaDTO {
@@ -11,4 +12,5 @@ public class CarpetaDTO {
     private String autor;
     private LocalDateTime fechaCreacion;
     private Long parentId;
+    private List<CarpetaDTO> subcarpetas;
 }

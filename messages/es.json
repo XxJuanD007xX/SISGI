@@ -1,0 +1,32 @@
+{
+  "Dashboard": {
+    "title": "Resumen General",
+    "welcome": "¡Hola, Equipo Dipal!",
+    "systemOnline": "Sistema en línea",
+    "stats": {
+      "products": "Productos",
+      "inventoryValue": "Valor Inventario",
+      "suppliers": "Proveedores",
+      "pendingOrders": "Pedidos Pendientes"
+    }
+  },
+  "Navigation": {
+    "dashboard": "Panel de Control",
+    "products": "Productos",
+    "suppliers": "Proveedores",
+    "sales": "Ventas",
+    "orders": "Órdenes de Compra",
+    "documents": "Documentos",
+    "announcements": "Anuncios",
+    "calendar": "Calendario",
+    "reports": "Reportes",
+    "configuration": "Configuración",
+    "users": "Usuarios",
+    "groups": {
+      "main": "Principal",
+      "management": "Gestión",
+      "admin": "Administración",
+      "tools": "Herramientas"
+    }
+  }
+}

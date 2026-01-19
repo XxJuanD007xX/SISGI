@@ -1,16 +1,16 @@
 import { type Metadata } from 'next'
 import {
   ClerkProvider,
-  SignInButton,
-  SignUpButton,
-  SignedIn,
-  SignedOut,
-  UserButton,
 } from '@clerk/nextjs'
 import { Geist, Geist_Mono } from 'next/font/google'
-import './globals.css'
+import '../globals.css'
 import { Toaster } from 'sonner'
-import { ThemeProvider } from '@/app/components/theme-provider' // Importado
+import { ThemeProvider } from '@/app/components/theme-provider'
+import {NextIntlClientProvider} from 'next-intl';
+import {getMessages} from 'next-intl/server';
+import {notFound} from 'next/navigation';
+import {routing} from '@/i18n/routing';
+import { clerkAppearance } from '@/lib/clerk-theme';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -27,14 +27,24 @@ export const metadata = {
   description: 'Sistema de software para la Gestión de Inventarios de Variedades Dipal.',
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode
-}>) {
+  params
+}: {
+  children: React.ReactNode;
+  params: Promise<{locale: string}>;
+}) {
+  const {locale} = await params;
+
+  if (!routing.locales.includes(locale as any)) {
+    notFound();
+  }
+
+  const messages = await getMessages();
+
   return (
-    <ClerkProvider>
-      <html lang="es" className="dark">
+    <ClerkProvider appearance={clerkAppearance}>
+      <html lang={locale} className="dark" suppressHydrationWarning>
         <head>
           <link rel="preconnect" href="https://fonts.googleapis.com" />
           <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -42,19 +52,12 @@ export default function RootLayout({
           <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet" />
         </head>
         <body className={`${geistSans.variable} ${geistMono.variable} antialiased font-body`}>
-          <ThemeProvider defaultTheme="default"> {/* Añadido para envolver toda la app */}
-            <SignedOut>
-              {/*
-              <SignInButton />
-              <SignUpButton />
-              */}
-            </SignedOut>
-            <SignedIn>
-              {/* <UserButton /> */}
-            </SignedIn>
-            {children}
-            <Toaster />
-          </ThemeProvider>
+          <NextIntlClientProvider messages={messages}>
+            <ThemeProvider defaultTheme="default">
+              {children}
+              <Toaster />
+            </ThemeProvider>
+          </NextIntlClientProvider>
         </body>
       </html>
     </ClerkProvider>

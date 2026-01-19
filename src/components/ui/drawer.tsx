@@ -9,8 +9,8 @@ const Drawer = SheetPrimitive.Root
 const DrawerTrigger = SheetPrimitive.Trigger
 const DrawerClose = SheetPrimitive.Close
 
-const DrawerPortal = ({ className, ...props }: SheetPrimitive.DialogPortalProps) => (
-  <SheetPrimitive.Portal className={cn(className)} {...props} />
+const DrawerPortal = (props: SheetPrimitive.DialogPortalProps) => (
+  <SheetPrimitive.Portal {...props} />
 )
 DrawerPortal.displayName = SheetPrimitive.Portal.displayName
 
