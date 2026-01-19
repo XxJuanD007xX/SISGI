@@ -18,16 +18,16 @@ export default async function WelcomePage({ params }: { params: Promise<{ locale
 
   return (
     <SmoothScroll>
-        <div className="flex flex-col min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
+      <div className="flex flex-col min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
         <Header />
         <main className="flex-grow">
-            <HeroSection />
-            <FeaturesSection />
-            <TechnologiesSection />
-            <TestimonialsSection />
+          <HeroSection />
+          <FeaturesSection />
+          <TechnologiesSection />
+          <TestimonialsSection />
         </main>
         <Footer />
-        </div>
+      </div>
     </SmoothScroll>
   );
 }

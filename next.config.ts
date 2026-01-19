@@ -1,12 +1,21 @@
 import type { NextConfig } from "next";
+import createNextIntlPlugin from 'next-intl/plugin';
+
+const withNextIntl = createNextIntlPlugin();
 
 const nextConfig: NextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true, // 👈 esto evita que Vercel bloquee el build por errores de ESLint
+  // Solución para errores de resolución en Next 15 + Turbopack
+  experimental: {
+    turbo: {},
   },
   images: {
-    domains: ['placehold.co'], // 👈 aquí mantienes tu configuración de imágenes
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'placehold.co',
+      },
+    ],
   },
 };
 
-export default nextConfig;
+export default withNextIntl(nextConfig);
