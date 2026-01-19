@@ -1,0 +1,32 @@
+{
+  "Dashboard": {
+    "title": "General Overview",
+    "welcome": "Hello, Team Dipal!",
+    "systemOnline": "System online",
+    "stats": {
+      "products": "Products",
+      "inventoryValue": "Inventory Value",
+      "suppliers": "Suppliers",
+      "pendingOrders": "Pending Orders"
+    }
+  },
+  "Navigation": {
+    "dashboard": "Dashboard",
+    "products": "Products",
+    "suppliers": "Suppliers",
+    "sales": "Sales",
+    "orders": "Purchase Orders",
+    "documents": "Documents",
+    "announcements": "Announcements",
+    "calendar": "Calendar",
+    "reports": "Reports",
+    "configuration": "Configuration",
+    "users": "Users",
+    "groups": {
+      "main": "Main",
+      "management": "Management",
+      "admin": "Administration",
+      "tools": "Tools"
+    }
+  }
+}

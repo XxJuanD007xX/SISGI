@@ -80,6 +80,7 @@ export interface Carpeta {
   autor?: string;
   fechaCreacion?: string;
   parentId?: number;
+  subcarpetas?: Carpeta[];
 }
 
 export interface Documento {

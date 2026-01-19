@@ -8,11 +8,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { Truck, Plus, Search, Building, Phone, Mail, CheckCircle, Clock, FileText } from "lucide-react"
-import { SupplierFormModal } from "../../components/supplier-form-modal"
+import { SupplierFormModal } from "@/app/components/supplier-form-modal"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge"; 
 import { Proveedor, Product } from "@/app/components/types"
-import { SupplierDrawer } from "../../components/supplier-drawer" 
+import { SupplierDrawer } from "@/app/components/supplier-drawer"
 
 interface ProveedorStats {
   totalProveedores: number;
